@@ -194,8 +194,8 @@ export default function TournamentProvider({
     setBonusResults(prev => {
       const next = [...prev]
       const idx = next.findIndex(r => r.hole === hole)
-      const updated = { tournament_id: tournament.id, hole, scat_winner_team_id: scatTeamId, ctp_winner_player_id: ctpPlayerId } as BonusResult
-      if (idx >= 0) { next[idx] = { ...next[idx], ...updated } } else { next.push({ id: '', ...updated }) }
+      const updated: BonusResult = { id: '', tournament_id: tournament.id, hole, scat_winner_team_id: scatTeamId, ctp_winner_player_id: ctpPlayerId }
+      if (idx >= 0) { next[idx] = { ...next[idx], ...updated } } else { next.push(updated) }
       return next
     })
 

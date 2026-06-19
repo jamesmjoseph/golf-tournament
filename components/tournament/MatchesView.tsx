@@ -91,14 +91,14 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
                   {([['upper', upperTeam, upperPlayers, ['upper_p1','upper_p2']], ['lower', lowerTeam, lowerPlayers, ['lower_p1','lower_p2']]] as const).map(([side, team, pool, slots]) => (
                     <div key={side}>
                       <div style={{ fontSize: 10, color: team?.light_hex, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{team?.name}</div>
-                      {(slots as ('upper_p1'|'upper_p2'|'lower_p1'|'lower_p2')[]).map(slot => {
+                      {([...slots] as ('upper_p1'|'upper_p2'|'lower_p1'|'lower_p2')[]).map(slot => {
                         const current = m[slot]
                         return (
                           <select key={slot} value={current ?? ''} onChange={e => setSlot(m.id, slot, e.target.value)}
-                            style={{ width: '100%', marginBottom: 6, background: '#163322', border: `1px solid ${current ? team?.color_hex : '#444'}`, borderRadius: 6, color: current ? 'var(--gold-lt)' : 'var(--muted)', padding: '8px 10px', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
+                            style={{ width: '100%', marginBottom: 6, background: 'var(--bg-mid)', border: `1px solid ${current ? team?.color_hex : '#444'}`, borderRadius: 6, color: current ? 'var(--gold-lt)' : 'var(--muted)', padding: '8px 10px', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
                             <option value="">— Select —</option>
                             {pool.map(p => {
-                              const usedInOtherSlot = (slots as string[]).some(s => s !== slot && m[s as keyof Match] === p.id)
+                              const usedInOtherSlot = [...slots].some(s => s !== slot && m[s as keyof Match] === p.id)
                               return (
                                 <option key={p.id} value={p.id} disabled={usedInOtherSlot}>
                                   {p.name} (HCP {p.handicap})
