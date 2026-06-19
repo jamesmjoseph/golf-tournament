@@ -5,7 +5,7 @@ import SectionHeader from '@/components/ui/SectionHeader'
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay'
 import { getAdminToken } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import type { Course, Player, Team } from '@/lib/types'
+import type { Course, Hole, Player, Team, HcpMode } from '@/lib/types'
 
 export default function SetupView() {
   const { tournament, course, holes, teams, players, isAdmin, refetch } = useTournament()
@@ -18,6 +18,10 @@ export default function SetupView() {
       <div style={{ background: 'var(--surface)', border: '1px solid #333', borderRadius: 12, padding: 20, marginBottom: 24, textAlign: 'center' }}>
         <QRCodeDisplay url={appUrl} label={tournament.name} />
       </div>
+
+      {/* Handicap mode */}
+      <SectionHeader title="Scoring Rules" subtitle="How handicaps are applied in match play" />
+      <HcpModeAdmin />
 
       {/* Course */}
       <SectionHeader title="Course" subtitle={course ? `${course.name} · ${course.tee_color} Tees` : 'No course set'} />
@@ -32,6 +36,67 @@ export default function SetupView() {
           : <PlayersReadOnly teams={teams} players={players} />
         }
       </div>
+    </div>
+  )
+}
+
+// ── Handicap mode selector (always visible; toggle only active for admin) ─────
+function HcpModeAdmin() {
+  const { tournament, adminToken, isAdmin, hcpMode, setHcpMode } = useTournament()
+  const [saving, setSaving] = useState(false)
+
+  async function changeMode(mode: HcpMode) {
+    if (mode === hcpMode || saving) return
+    setHcpMode(mode)
+    if (!isAdmin) return
+    setSaving(true)
+    try {
+      await fetch(`/api/tournaments/${tournament.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminToken: adminToken ?? getAdminToken(tournament.slug), hcp_mode: mode }),
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const modes: { value: HcpMode; label: string; desc: string }[] = [
+    { value: 'low',    label: 'Play Off Low',    desc: 'Low handicap in the match plays scratch; others get the difference' },
+    { value: 'course', label: 'Against Course',  desc: 'Each player uses their full handicap index against the course' },
+  ]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+      {modes.map(m => {
+        const active = hcpMode === m.value
+        return (
+          <button key={m.value}
+            onClick={() => isAdmin ? changeMode(m.value) : undefined}
+            disabled={saving}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+              padding: '12px 16px', borderRadius: 10, cursor: isAdmin ? 'pointer' : 'default',
+              border: `1px solid ${active ? 'var(--gold)' : '#444'}`,
+              background: active ? '#c8a84b22' : 'var(--surface)',
+              opacity: saving ? 0.6 : 1,
+            }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+              border: `2px solid ${active ? 'var(--gold)' : '#555'}`,
+              background: active ? 'var(--gold)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bg)' }} />}
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: active ? 'bold' : 'normal', color: active ? 'var(--gold)' : 'var(--gold-lt)' }}>{m.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{m.desc}</div>
+            </div>
+          </button>
+        )
+      })}
+      {!isAdmin && <div style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>Admin access required to change scoring rules.</div>}
     </div>
   )
 }
@@ -103,43 +168,146 @@ function CourseAdmin() {
   )
 }
 
-// ── Scorecard table ────────────────────────────────────────────────────────────
+// ── Scorecard table (read + edit) ──────────────────────────────────────────────
+type HoleDraft = { hole: number; par: number; hcp: number; yards: number | null }
+
 function ScorecardTable() {
-  const { holes } = useTournament()
+  const { holes, tournament, isAdmin, adminToken, refetch, setHoles } = useTournament()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft]     = useState<HoleDraft[]>([])
+  const [saving, setSaving]   = useState(false)
+  const [err, setErr]         = useState('')
+
   const parTotal = holes.reduce((s, h) => s + h.par, 0)
   const ydsTotal = holes.reduce((s, h) => s + (h.yards ?? 0), 0)
 
+  function startEdit() {
+    setDraft(holes.map(h => ({ hole: h.hole, par: h.par, hcp: h.hcp, yards: h.yards })))
+    setEditing(true)
+    setErr('')
+  }
+
+  function updateDraft(holeNum: number, field: keyof HoleDraft, raw: string) {
+    const val = raw === '' ? null : parseInt(raw)
+    setDraft(d => d.map(h => h.hole === holeNum ? { ...h, [field]: val } : h))
+  }
+
+  async function save() {
+    setSaving(true); setErr('')
+    try {
+      const res = await fetch(`/api/tournaments/${tournament.slug}/holes`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminToken: adminToken ?? getAdminToken(tournament.slug),
+          holes: draft,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      await refetch()
+      setEditing(false)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Save failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const draftParTotal = draft.reduce((s, h) => s + (h.par ?? 0), 0)
+  const draftYdsTotal = draft.reduce((s, h) => s + (h.yards ?? 0), 0)
+
+  if (!editing) {
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-mid)' }}>
+                {['Hole', 'Par', 'HCP', 'Yds'].map(h => (
+                  <th key={h} style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--gold)', letterSpacing: 1 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {holes.map((h, i) => (
+                <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 'bold', color: h.hole < 10 ? '#7fb3d3' : 'var(--gold-lt)' }}>
+                    {h.hole}{h.hole === 10 ? ' ↩' : ''}
+                  </td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', color: h.par === 3 ? '#58d68d' : h.par === 5 ? '#f0a500' : 'var(--gold-lt)' }}>{h.par}</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', color: 'var(--muted)' }}>{h.hcp}</td>
+                  <td style={{ padding: '6px 6px', textAlign: 'center', color: 'var(--muted)' }}>{h.yards ?? '—'}</td>
+                </tr>
+              ))}
+              <tr style={{ background: 'var(--bg-mid)', fontWeight: 'bold' }}>
+                <td style={{ padding: '8px', textAlign: 'center', color: 'var(--gold)' }}>TOT</td>
+                <td style={{ padding: '8px', textAlign: 'center', color: 'var(--gold)' }}>{parTotal}</td>
+                <td />
+                <td style={{ padding: '8px', textAlign: 'center', color: 'var(--muted)' }}>
+                  {ydsTotal > 0 ? `${ydsTotal.toLocaleString()} yds` : '—'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {isAdmin && (
+          <button onClick={startEdit} style={{ ...adminBtnStyle, marginTop: 10 }}>✏ Edit Scorecard</button>
+        )}
+      </div>
+    )
+  }
+
+  // Edit mode
   return (
-    <div style={{ overflowX: 'auto', marginBottom: 8 }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-        <thead>
-          <tr style={{ background: 'var(--bg-mid)' }}>
-            {['Hole', 'Par', 'HCP', 'Yds'].map(h => (
-              <th key={h} style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--gold)', letterSpacing: 1 }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {holes.map((h, i) => (
-            <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
-              <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 'bold', color: h.hole === 10 ? '#aaa' : h.hole < 10 ? '#7fb3d3' : 'var(--gold-lt)' }}>
-                {h.hole}{h.hole === 10 ? ' ↩' : ''}
-              </td>
-              <td style={{ padding: '6px 6px', textAlign: 'center', color: h.par === 3 ? '#58d68d' : h.par === 5 ? '#f0a500' : 'var(--gold-lt)' }}>{h.par}</td>
-              <td style={{ padding: '6px 6px', textAlign: 'center', color: 'var(--muted)' }}>{h.hcp}</td>
-              <td style={{ padding: '6px 6px', textAlign: 'center', color: 'var(--muted)' }}>{h.yards ?? '—'}</td>
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg-mid)' }}>
+              {['Hole', 'Par', 'HCP', 'Yds'].map(h => (
+                <th key={h} style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--gold)', letterSpacing: 1 }}>{h}</th>
+              ))}
             </tr>
-          ))}
-          <tr style={{ background: 'var(--bg-mid)', fontWeight: 'bold' }}>
-            <td style={{ padding: '8px', textAlign: 'center', color: 'var(--gold)' }}>TOT</td>
-            <td style={{ padding: '8px', textAlign: 'center', color: 'var(--gold)' }}>{parTotal}</td>
-            <td />
-            <td style={{ padding: '8px', textAlign: 'center', color: 'var(--muted)' }}>
-              {ydsTotal > 0 ? `${ydsTotal.toLocaleString()} yds` : '—'}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {draft.map((h, i) => (
+              <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
+                <td style={{ padding: '4px 6px', textAlign: 'center', fontWeight: 'bold', color: h.hole < 10 ? '#7fb3d3' : 'var(--gold-lt)' }}>
+                  {h.hole}{h.hole === 10 ? ' ↩' : ''}
+                </td>
+                <td style={{ padding: '4px 3px', textAlign: 'center' }}>
+                  <input type="number" min="3" max="5" value={h.par ?? ''}
+                    onChange={e => updateDraft(h.hole, 'par', e.target.value)}
+                    style={{ ...cellInputSt, color: h.par === 3 ? '#58d68d' : h.par === 5 ? '#f0a500' : 'var(--gold-lt)' }} />
+                </td>
+                <td style={{ padding: '4px 3px', textAlign: 'center' }}>
+                  <input type="number" min="1" max="18" value={h.hcp ?? ''}
+                    onChange={e => updateDraft(h.hole, 'hcp', e.target.value)}
+                    style={{ ...cellInputSt, color: 'var(--muted)' }} />
+                </td>
+                <td style={{ padding: '4px 3px', textAlign: 'center' }}>
+                  <input type="number" min="50" max="700" value={h.yards ?? ''}
+                    onChange={e => updateDraft(h.hole, 'yards', e.target.value)}
+                    style={{ ...cellInputSt, color: 'var(--muted)' }} />
+                </td>
+              </tr>
+            ))}
+            <tr style={{ background: 'var(--bg-mid)', fontWeight: 'bold' }}>
+              <td style={{ padding: '8px', textAlign: 'center', color: 'var(--gold)' }}>TOT</td>
+              <td style={{ padding: '8px', textAlign: 'center', color: 'var(--gold)' }}>{draftParTotal}</td>
+              <td />
+              <td style={{ padding: '8px', textAlign: 'center', color: 'var(--muted)' }}>
+                {draftYdsTotal > 0 ? `${draftYdsTotal.toLocaleString()} yds` : '—'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {err && <div style={{ color: '#f1948a', fontSize: 12, margin: '6px 0' }}>{err}</div>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        <button onClick={save} disabled={saving} style={{ ...adminBtnStyle, flex: 1 }}>{saving ? 'Saving…' : '✓ Save Scorecard'}</button>
+        <button onClick={() => setEditing(false)} style={{ ...adminBtnStyle, background: 'transparent', border: '1px solid #444', color: 'var(--muted)' }}>Cancel</button>
+      </div>
     </div>
   )
 }
@@ -251,6 +419,11 @@ function PlayersAdmin({ teams, players, slug, onSave }: { teams: Team[]; players
   )
 }
 
+const cellInputSt: React.CSSProperties = {
+  width: 44, textAlign: 'center', background: 'rgba(255,255,255,0.08)',
+  border: '1px solid #555', borderRadius: 5, fontSize: 12,
+  padding: '4px 2px', outline: 'none',
+}
 const inputSt: React.CSSProperties = {
   background: 'rgba(255,255,255,0.06)', border: '1px solid #444', borderRadius: 8,
   color: 'var(--gold-lt)', fontSize: 14, padding: '8px 10px', outline: 'none',

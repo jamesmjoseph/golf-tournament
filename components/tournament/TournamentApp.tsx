@@ -15,7 +15,7 @@ type Tab = 'Setup' | 'Matches' | 'Scoring' | 'Leaderboard' | 'Bonuses' | 'Summar
 const ALL_TABS: Tab[] = ['Setup', 'Matches', 'Scoring', 'Leaderboard', 'Bonuses', 'Summary']
 
 export default function TournamentApp() {
-  const { tournament, course, holes, matches, players, scores, upperTeam, lowerTeam, isAdmin } = useTournament()
+  const { tournament, course, holes, matches, players, scores, upperTeam, lowerTeam, isAdmin, hcpMode } = useTournament()
   const [tab, setTab]                 = useState<Tab>('Scoring')
   const [activeMatchIdx, setActiveMatchIdx] = useState(0)
   const [currentHole, setCurrentHole]       = useState(1)
@@ -44,7 +44,7 @@ export default function TournamentApp() {
             <span style={{ color: lowerTeam?.light_hex }}>{lowerTeam?.name}</span>
           </div>
           <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-            {matches.length} Matches · 2v2 Best Ball · 1 pt/hole
+            {matches.length} Matches · 2v2 Best Ball · {hcpMode === 'low' ? 'Play Off Low' : 'Against Course'} · 1 pt/hole
             {isAdmin && <span style={{ color: 'var(--gold)', marginLeft: 8 }}>· ADMIN</span>}
           </div>
         </div>

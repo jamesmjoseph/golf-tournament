@@ -1,15 +1,23 @@
 'use client'
 import { useTournament } from './TournamentContext'
 import SectionHeader from '@/components/ui/SectionHeader'
-import { matchTotals, cupTotals } from '@/lib/scoring'
+import { matchTotals, cupTotals, scatWinner } from '@/lib/scoring'
 
 export default function SummaryView() {
-  const { matches, players, holes, scores, teams, upperTeam, lowerTeam, bonusConfig, bonusResults } = useTournament()
-  const cup = cupTotals(matches, holes, players, scores)
+  const { matches, players, holes, scores, teams, upperTeam, lowerTeam, bonusConfig, bonusResults, hcpMode } = useTournament()
+  const cup = cupTotals(matches, holes, players, scores, hcpMode)
 
   const winner = cup.upper > cup.lower ? upperTeam : cup.lower > cup.upper ? lowerTeam : null
 
-  const scatByTeam = (teamId: string) => bonusResults.filter(r => r.scat_winner_team_id === teamId).length
+  // Scat: compute wins per player from scores
+  const scatWins = players
+    .map(p => ({
+      player: p,
+      wins: holes.filter(h => scatWinner(h.hole, players, scores)?.id === p.id).length,
+    }))
+    .filter(x => x.wins > 0)
+    .sort((a, b) => b.wins - a.wins)
+
   const ctpList = bonusResults
     .filter(r => r.ctp_winner_player_id)
     .map(r => ({
@@ -34,7 +42,7 @@ export default function SummaryView() {
       <SectionHeader title="Match Results" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
         {matches.map(m => {
-          const t = matchTotals(m, holes, players, scores)
+          const t = matchTotals(m, holes, players, scores, hcpMode)
           const u1 = players.find(p => p.id === m.upper_p1)
           const u2 = players.find(p => p.id === m.upper_p2)
           const l1 = players.find(p => p.id === m.lower_p1)
@@ -62,18 +70,29 @@ export default function SummaryView() {
         })}
       </div>
 
-      {/* Scat */}
-      {bonusConfig?.scat_enabled && (
+      {/* Scat — per player */}
+      {bonusConfig?.scat_enabled && scatWins.length > 0 && (
         <>
-          <SectionHeader title="Scat Pool" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-            {teams.map(team => {
-              const won = scatByTeam(team.id)
+          <SectionHeader title="Scat Pool" subtitle="Individual lowest score per hole" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+            {scatWins.map(({ player, wins }) => {
+              const team = teams.find(t => t.id === player.team_id)
+              const earnings = wins * bonusConfig.scat_amount
               return (
-                <div key={team.id} style={{ padding: 14, background: team.color_hex + '22', borderRadius: 10, textAlign: 'center', border: `1px solid ${team.color_hex}44` }}>
-                  <div style={{ fontSize: 11, color: team.light_hex }}>{team.name}</div>
-                  <div style={{ fontSize: 22, fontWeight: 'bold', color: team.light_hex }}>{won} holes</div>
-                  <div style={{ fontSize: 18, color: '#58d68d', fontWeight: 'bold' }}>${won * (bonusConfig.scat_amount)}</div>
+                <div key={player.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px', background: (team?.color_hex ?? '#333') + '22',
+                  borderRadius: 10, border: `1px solid ${(team?.color_hex ?? '#444')}44`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? '#aaa' }} />
+                    <span style={{ fontSize: 14, fontWeight: 'bold', color: team?.light_hex ?? 'var(--gold-lt)' }}>{player.name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>{team?.name}</span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: '#aaa' }}>{wins} hole{wins !== 1 ? 's' : ''} · </span>
+                    <span style={{ fontSize: 18, fontWeight: 'bold', color: '#58d68d' }}>${earnings}</span>
+                  </div>
                 </div>
               )
             })}

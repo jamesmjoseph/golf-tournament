@@ -1,4 +1,5 @@
 export type TournamentStatus = 'setup' | 'active' | 'complete'
+export type HcpMode = 'low' | 'course'
 
 export interface Tournament {
   id: string
@@ -7,6 +8,7 @@ export interface Tournament {
   date: string
   status: TournamentStatus
   course_id: string | null
+  hcp_mode: HcpMode
   created_at: string
 }
 

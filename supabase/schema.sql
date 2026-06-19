@@ -29,8 +29,10 @@ create table tournaments (
   date        date not null,
   status      text not null default 'setup' check (status in ('setup','active','complete')),
   course_id   uuid references courses(id),
+  hcp_mode    text not null default 'low' check (hcp_mode in ('low','course')),
   created_at  timestamptz not null default now()
 );
+-- If adding to an existing DB: alter table tournaments add column hcp_mode text not null default 'low' check (hcp_mode in ('low','course'));
 
 -- Admin tokens stored separately so they never appear in public SELECT queries
 create table tournament_secrets (

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getSessionId, getAdminToken, storeAdminToken } from '@/lib/utils'
 import type {
   Tournament, Course, Hole, Team, Player, Match,
-  Score, BonusConfig, BonusResult, ScoreMap,
+  Score, BonusConfig, BonusResult, ScoreMap, HcpMode,
 } from '@/lib/types'
 
 interface TournamentContextValue {
@@ -21,6 +21,8 @@ interface TournamentContextValue {
   adminToken: string | null
   upperTeam: Team | null
   lowerTeam: Team | null
+  hcpMode: HcpMode
+  setHcpMode: (mode: HcpMode) => void
   updateScore: (playerId: string, hole: number, rawScore: number | null) => Promise<void>
   updateBonusResult: (hole: number, scatTeamId: string | null, ctpPlayerId: string | null) => Promise<void>
   refetch: () => Promise<void>
@@ -79,6 +81,7 @@ export default function TournamentProvider({
   const [bonusConfig, setBonusConfig]     = useState<BonusConfig | null>(initialBonusConfig)
   const [bonusResults, setBonusResults]   = useState<BonusResult[]>(initialBonusResults)
   const [adminToken, setAdminToken]       = useState<string | null>(null)
+  const [hcpMode, setHcpMode]             = useState<HcpMode>(tournament.hcp_mode ?? 'low')
 
   // ── Admin token: read from URL → persist to localStorage → clean URL ─────
   useEffect(() => {
@@ -251,6 +254,8 @@ export default function TournamentProvider({
       adminToken,
       upperTeam,
       lowerTeam,
+      hcpMode,
+      setHcpMode,
       updateScore,
       updateBonusResult,
       refetch,

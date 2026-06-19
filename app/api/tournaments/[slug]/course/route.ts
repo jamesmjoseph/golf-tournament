@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { validateAdminToken } from '@/lib/auth'
-import type { CoursePreview } from '@/lib/types'
 
 export async function POST(
   request: Request,
@@ -9,7 +8,7 @@ export async function POST(
 ) {
   try {
     const { slug } = await params
-    const { adminToken, course }: { adminToken: string; course: CoursePreview } = await request.json()
+    const { adminToken, course }: { adminToken: string; course: { name: string; location: string; tee_color: string; holes: Record<string, unknown>[] } } = await request.json()
 
     if (!(await validateAdminToken(slug, adminToken))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

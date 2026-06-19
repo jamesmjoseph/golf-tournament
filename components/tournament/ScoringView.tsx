@@ -1,6 +1,6 @@
 'use client'
 import { useTournament } from './TournamentContext'
-import { holeMatchPoints, matchTotals, netScore, strokesGiven, pairBestNet } from '@/lib/scoring'
+import { holeMatchPoints, matchTotals, netScore, strokesGiven, pairBestNet, matchMinHcp, playerEffHcp } from '@/lib/scoring'
 import { parLabel } from '@/lib/utils'
 import type { Match } from '@/lib/types'
 
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, currentHole, setCurrentHole }: Props) {
-  const { matches, players, holes, scores, updateScore, upperTeam, lowerTeam } = useTournament()
+  const { matches, players, holes, scores, updateScore, upperTeam, lowerTeam, hcpMode } = useTournament()
 
   if (holes.length === 0) {
     return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Add a course in Setup before scoring.</div>
@@ -20,13 +20,14 @@ export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, current
 
   const match = matches[activeMatchIdx]
   const hole  = holes.find(h => h.hole === currentHole) ?? holes[0]
-  const totals = match ? matchTotals(match, holes, players, scores) : { upper: 0, lower: 0 }
-  const holeResult = match ? holeMatchPoints(match, currentHole, holes, players, scores) : null
+  const minHcp = match ? matchMinHcp(match, players) : 0
+  const totals = match ? matchTotals(match, holes, players, scores, hcpMode) : { upper: 0, lower: 0 }
+  const holeResult = match ? holeMatchPoints(match, currentHole, holes, players, scores, hcpMode) : null
 
   function matchStatus() {
     if (!match) return ''
     const diff = totals.upper - totals.lower
-    const holesPlayed = holes.filter(h => holeMatchPoints(match, h.hole, holes, players, scores) !== null).length
+    const holesPlayed = holes.filter(h => holeMatchPoints(match, h.hole, holes, players, scores, hcpMode) !== null).length
     if (holesPlayed === 0 || diff === 0) return 'All Square'
     const side = diff > 0 ? upperTeam?.name : lowerTeam?.name
     return `${side} leads ${Math.abs(diff)}–${Math.min(totals.upper, totals.lower)}`
@@ -37,7 +38,7 @@ export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, current
       {/* Match tabs */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
         {matches.map((m, i) => {
-          const t = matchTotals(m, holes, players, scores)
+          const t = matchTotals(m, holes, players, scores, hcpMode)
           const active = i === activeMatchIdx
           return (
             <button key={m.id} onClick={() => setActiveMatchIdx(i)} style={{
@@ -76,7 +77,7 @@ export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, current
           {/* Hole selector */}
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 14 }}>
             {holes.map(h => {
-              const r = holeMatchPoints(match, h.hole, holes, players, scores)
+              const r = holeMatchPoints(match, h.hole, holes, players, scores, hcpMode)
               let border = '#444', bg = 'var(--surface)', color = '#aaa'
               if (r) {
                 if (r.upper > r.lower)      { border = upperTeam?.color_hex ?? '#2471a3'; bg = (upperTeam?.color_hex ?? '#2471a3') + '44'; color = upperTeam?.light_hex ?? '#7fb3d3' }
@@ -136,7 +137,7 @@ export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, current
             ]).map(({ side, team, pids }) => {
               const validPids = pids.filter(Boolean) as string[]
               const bestNet = validPids.length
-                ? pairBestNet(pids[0], pids[1], currentHole, holes, players, scores)
+                ? pairBestNet(pids[0], pids[1], currentHole, holes, players, scores, hcpMode, hcpMode === 'low' ? minHcp : 0)
                 : null
               return (
                 <div key={side}>
@@ -145,14 +146,18 @@ export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, current
                   {validPids.map(pid => {
                     const p   = players.find(pl => pl.id === pid)
                     if (!p) return null
+                    const effHcp = playerEffHcp(p.handicap, minHcp, hcpMode)
                     const raw = scores[pid]?.[currentHole]
-                    const net = raw !== undefined ? netScore(raw, p.handicap, hole.hcp) : null
-                    const sg  = strokesGiven(p.handicap, hole.hcp)
+                    const net = raw !== undefined ? netScore(raw, effHcp, hole.hcp) : null
+                    const sg  = strokesGiven(effHcp, hole.hcp)
+                    const hcpLabel = hcpMode === 'low' && effHcp !== p.handicap
+                      ? `HCP ${p.handicap} (eff. ${effHcp})`
+                      : `HCP ${p.handicap}`
                     return (
                       <div key={pid} style={{ background: 'var(--surface)', borderRadius: 8, padding: '10px 12px', marginBottom: 8, border: `1px solid ${team?.color_hex ?? '#333'}33` }}>
                         <div style={{ fontWeight: 'bold', fontSize: 13, marginBottom: 2 }}>{p.name || '—'}</div>
                         <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 8 }}>
-                          HCP {p.handicap}{sg > 0 ? ` · +${sg} stroke${sg > 1 ? 's' : ''}` : ' · no stroke'}
+                          {hcpLabel}{sg > 0 ? ` · +${sg} stroke${sg > 1 ? 's' : ''}` : ' · no stroke'}
                         </div>
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           {[hole.par - 1, hole.par, hole.par + 1, hole.par + 2, hole.par + 3].map(s => (
@@ -210,7 +215,7 @@ export default function ScoringView({ activeMatchIdx, setActiveMatchIdx, current
                     <tr key={side}>
                       <td style={{ padding: '5px 6px', color: team?.light_hex, fontSize: 10, fontWeight: 'bold' }}>{team?.name?.slice(0,8)}</td>
                       {holes.map(h => {
-                        const r = holeMatchPoints(match, h.hole, holes, players, scores)
+                        const r = holeMatchPoints(match, h.hole, holes, players, scores, hcpMode)
                         const pts = r ? (side === 'upper' ? r.upper : r.lower) : null
                         if (pts !== null) cum += pts
                         return (

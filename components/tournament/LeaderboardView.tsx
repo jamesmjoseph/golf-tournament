@@ -4,8 +4,8 @@ import SectionHeader from '@/components/ui/SectionHeader'
 import { matchTotals, cupTotals, holeMatchPoints } from '@/lib/scoring'
 
 export default function LeaderboardView() {
-  const { matches, players, holes, scores, teams, upperTeam, lowerTeam } = useTournament()
-  const cup = cupTotals(matches, holes, players, scores)
+  const { matches, players, holes, scores, teams, upperTeam, lowerTeam, hcpMode } = useTournament()
+  const cup = cupTotals(matches, holes, players, scores, hcpMode)
 
   return (
     <div>
@@ -41,12 +41,12 @@ export default function LeaderboardView() {
       <SectionHeader title="Match Scores" subtitle="Points per hole · 1 win · ½ tie" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {matches.map(m => {
-          const t = matchTotals(m, holes, players, scores)
+          const t = matchTotals(m, holes, players, scores, hcpMode)
           const u1 = players.find(p => p.id === m.upper_p1)
           const u2 = players.find(p => p.id === m.upper_p2)
           const l1 = players.find(p => p.id === m.lower_p1)
           const l2 = players.find(p => p.id === m.lower_p2)
-          const holesPlayed = holes.filter(h => holeMatchPoints(m, h.hole, holes, players, scores) !== null).length
+          const holesPlayed = holes.filter(h => holeMatchPoints(m, h.hole, holes, players, scores, hcpMode) !== null).length
 
           return (
             <div key={m.id} style={{ background: 'var(--surface)', borderRadius: 10, padding: '14px 16px', border: '1px solid #333' }}>
@@ -74,7 +74,7 @@ export default function LeaderboardView() {
               {/* Hole dots */}
               <div style={{ display: 'flex', gap: 3, marginTop: 10, flexWrap: 'wrap' }}>
                 {holes.map(h => {
-                  const r = holeMatchPoints(m, h.hole, holes, players, scores)
+                  const r = holeMatchPoints(m, h.hole, holes, players, scores, hcpMode)
                   const bg = r
                     ? r.upper > r.lower ? upperTeam?.color_hex : r.lower > r.upper ? lowerTeam?.color_hex : 'var(--gold)'
                     : '#333'
