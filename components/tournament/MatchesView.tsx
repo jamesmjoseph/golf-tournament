@@ -73,9 +73,9 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {hasScores && (
                     <div style={{ fontSize: 13 }}>
-                      <span style={{ color: upperTeam?.light_hex, fontWeight: 'bold' }}>{totals.upper}</span>
+                      <span style={{ color: upperTeam?.color_hex, fontWeight: 'bold' }}>{totals.upper}</span>
                       <span style={{ color: 'var(--muted)', margin: '0 6px' }}>–</span>
-                      <span style={{ color: lowerTeam?.light_hex, fontWeight: 'bold' }}>{totals.lower}</span>
+                      <span style={{ color: lowerTeam?.color_hex, fontWeight: 'bold' }}>{totals.lower}</span>
                     </div>
                   )}
                   {complete && !isEditing && (
@@ -90,7 +90,7 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {([['upper', upperTeam, upperPlayers, ['upper_p1','upper_p2']], ['lower', lowerTeam, lowerPlayers, ['lower_p1','lower_p2']]] as const).map(([side, team, pool, slots]) => (
                     <div key={side}>
-                      <div style={{ fontSize: 10, color: team?.light_hex, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{team?.name}</div>
+                      <div style={{ fontSize: 10, color: team?.color_hex, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{team?.name}</div>
                       {([...slots] as ('upper_p1'|'upper_p2'|'lower_p1'|'lower_p2')[]).map(slot => {
                         const current = m[slot]
                         return (
@@ -113,10 +113,10 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
                 </div>
               ) : (
                 complete ? (
-                  <div style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.3)', borderRadius: 8, fontSize: 13, textAlign: 'center', color: 'var(--muted)' }}>
-                    <span style={{ color: upperTeam?.light_hex }}>{u1?.name} & {u2?.name}</span>
+                  <div style={{ padding: '8px 12px', background: 'var(--surface)', borderRadius: 8, fontSize: 13, textAlign: 'center', color: 'var(--muted)' }}>
+                    <span style={{ color: upperTeam?.color_hex, fontWeight: 600 }}>{u1?.name} & {u2?.name}</span>
                     <span style={{ margin: '0 8px' }}>vs</span>
-                    <span style={{ color: lowerTeam?.light_hex }}>{l1?.name} & {l2?.name}</span>
+                    <span style={{ color: lowerTeam?.color_hex, fontWeight: 600 }}>{l1?.name} & {l2?.name}</span>
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: 'var(--muted)', fontStyle: 'italic' }}>No players assigned yet</div>
