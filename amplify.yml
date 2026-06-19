@@ -6,7 +6,17 @@ frontend:
         - npm ci
     build:
       commands:
+        # Print whether each var is present so you can confirm in build logs
+        - echo "NEXT_PUBLIC_SUPABASE_URL=$([ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo SET || echo MISSING)"
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$([ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && echo SET || echo MISSING)"
+        - echo "SUPABASE_SERVICE_ROLE_KEY=$([ -n "$SUPABASE_SERVICE_ROLE_KEY" ] && echo SET || echo MISSING)"
+        # Write all vars to .env.production so Next.js bakes NEXT_PUBLIC_* into the bundle
+        - echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> .env.production
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.production
+        - echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.production
         - npm run build
+        # Copy env file into the artifact so the Lambda can read it at startup
+        - cp .env.production .next/.env.production
   artifacts:
     baseDirectory: .next
     files:
