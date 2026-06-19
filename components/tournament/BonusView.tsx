@@ -10,7 +10,8 @@ import type { Hole } from '@/lib/types'
 export default function BonusView() {
   const { tournament, holes, players, teams, bonusConfig, bonusResults, ctpLog, scores, updateScatHole, updateCtp, isAdmin, adminToken, refetch } = useTournament()
   const [savingConfig, setSavingConfig] = useState(false)
-  const [poolDraft, setPoolDraft] = useState(() => String(bonusConfig?.scat_pool ?? 0))
+  const [poolDraft, setPoolDraft]       = useState(() => String(bonusConfig?.scat_pool ?? 0))
+  const [ctpPoolDraft, setCtpPoolDraft] = useState(() => String(bonusConfig?.ctp_pool ?? 0))
 
   const par3Holes = holes.filter(h => h.par === 3)
 
@@ -41,15 +42,23 @@ export default function BonusView() {
     await fetch(`/api/tournaments/${tournament.slug}/bonus-config`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        adminToken: adminToken ?? getAdminToken(tournament.slug),
-        scat_pool: amount,
-      }),
+      body: JSON.stringify({ adminToken: adminToken ?? getAdminToken(tournament.slug), scat_pool: amount }),
+    })
+    await refetch()
+  }
+
+  async function updateCtpPool(amount: number) {
+    if (!bonusConfig) return
+    await fetch(`/api/tournaments/${tournament.slug}/bonus-config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminToken: adminToken ?? getAdminToken(tournament.slug), ctp_pool: amount }),
     })
     await refetch()
   }
 
   const scatPool = bonusConfig?.scat_pool ?? 0
+  const ctpPool  = bonusConfig?.ctp_pool  ?? 0
 
   // All holes with an effective winner (used for payout calculation)
   const winningHoles = holes.filter(h => effectiveScatWinner(h.hole, players, scores, bonusResults) !== null)
@@ -231,9 +240,41 @@ export default function BonusView() {
       {/* Closest to the Pin */}
       {par3Holes.length > 0 && (
         <>
-          <SectionHeader title="Closest to the Pin" subtitle={`Par 3 holes: ${par3Holes.map(h => h.hole).join(', ')}`} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <SectionHeader title="Closest to the Pin" subtitle={`Par 3 holes: ${par3Holes.map(h => h.hole).join(', ')}`} />
+            {isAdmin && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Pool $:</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={ctpPoolDraft}
+                  onChange={e => setCtpPoolDraft(e.target.value)}
+                  onBlur={() => {
+                    const val = parseInt(ctpPoolDraft)
+                    if (!isNaN(val) && val >= 0) updateCtpPool(val)
+                    else setCtpPoolDraft(String(ctpPool))
+                  }}
+                  style={{ width: 60, textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--gold)', fontSize: 15, fontWeight: 700, padding: '4px 0', outline: 'none' }}
+                />
+              </div>
+            )}
+          </div>
+          {ctpPool > 0 && (() => {
+            const holesWithWinner = par3Holes.filter(h => getBonusResult(h.hole)?.ctp_winner_player_id).length
+            const payoutEach = holesWithWinner > 0 ? ctpPool / holesWithWinner : 0
+            return (
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12, fontFamily: 'var(--font-mono)', display: 'flex', gap: 16 }}>
+                <span>${ctpPool} pool ÷ {holesWithWinner} hole{holesWithWinner !== 1 ? 's' : ''} with a winner</span>
+                {payoutEach > 0 && <span style={{ color: 'var(--mint)', fontWeight: 700 }}>${payoutEach % 1 === 0 ? payoutEach : payoutEach.toFixed(2)} / hole</span>}
+              </div>
+            )
+          })()}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {par3Holes.map(h => (
+            {par3Holes.map(h => {
+              const holesWithWinner = par3Holes.filter(hh => getBonusResult(hh.hole)?.ctp_winner_player_id).length
+              const ctpPayoutEach = ctpPool > 0 && holesWithWinner > 0 ? ctpPool / holesWithWinner : 0
+              return (
               <CtpHoleCard
                 key={h.hole}
                 hole={h}
@@ -242,11 +283,12 @@ export default function BonusView() {
                 br={getBonusResult(h.hole)}
                 log={ctpLog.filter(l => l.hole === h.hole)}
                 isAdmin={isAdmin}
+                ctpPayout={ctpPayoutEach}
                 onSelectPlayer={pid => updateCtp(h.hole, pid, null, null)}
                 onClear={() => updateCtp(h.hole, null, null, null)}
                 onRecord={(pid, ft, inches) => updateCtp(h.hole, pid, ft, inches)}
               />
-            ))}
+            )})}
           </div>
         </>
       )}
@@ -263,12 +305,13 @@ interface CtpCardProps {
   br: { ctp_winner_player_id: string | null; ctp_distance_ft: number | null; ctp_distance_in: number | null } | null
   log: { id: string; player_id: string | null; distance_ft: number | null; distance_in: number | null; recorded_at: string }[]
   isAdmin: boolean
+  ctpPayout: number
   onSelectPlayer: (pid: string) => void
   onClear: () => void
   onRecord: (pid: string, ft: number | null, inches: number | null) => void
 }
 
-function CtpHoleCard({ hole, players, teams, br, log, isAdmin, onSelectPlayer, onClear, onRecord }: CtpCardProps) {
+function CtpHoleCard({ hole, players, teams, br, log, isAdmin, ctpPayout, onSelectPlayer, onClear, onRecord }: CtpCardProps) {
   const ctpId = br?.ctp_winner_player_id ?? null
   const [draftFt, setDraftFt]       = useState<string>(br?.ctp_distance_ft != null ? String(br.ctp_distance_ft) : '')
   const [draftIn, setDraftIn]       = useState<string>(br?.ctp_distance_in != null ? String(br.ctp_distance_in) : '')
@@ -309,6 +352,11 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, onSelectPlayer, o
           {distStr(br?.ctp_distance_ft ?? null, br?.ctp_distance_in ?? null) && (
             <span style={{ fontSize: 12, color: 'var(--mint)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
               {distStr(br?.ctp_distance_ft ?? null, br?.ctp_distance_in ?? null)}
+            </span>
+          )}
+          {ctpPayout > 0 && (
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--mint)', marginLeft: 4, fontFamily: 'var(--font-mono)' }}>
+              ${ctpPayout % 1 === 0 ? ctpPayout : ctpPayout.toFixed(2)}
             </span>
           )}
         </div>

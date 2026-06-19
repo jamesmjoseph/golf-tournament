@@ -70,6 +70,7 @@ export interface BonusConfig {
   scat_enabled: boolean
   scat_amount: number
   scat_pool: number
+  ctp_pool: number
 }
 
 export interface BonusResult {

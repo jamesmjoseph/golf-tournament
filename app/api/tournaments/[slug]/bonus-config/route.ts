@@ -8,7 +8,7 @@ export async function PUT(
 ) {
   try {
     const { slug } = await params
-    const { adminToken, scat_enabled, scat_amount, scat_pool } = await request.json()
+    const { adminToken, scat_enabled, scat_amount, scat_pool, ctp_pool } = await request.json()
 
     if (!(await validateAdminToken(slug, adminToken))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -20,8 +20,9 @@ export async function PUT(
 
     const patch: Record<string, unknown> = {}
     if (scat_enabled !== undefined) patch.scat_enabled = scat_enabled
-    if (scat_amount !== undefined) patch.scat_amount = scat_amount
-    if (scat_pool !== undefined) patch.scat_pool = scat_pool
+    if (scat_amount  !== undefined) patch.scat_amount  = scat_amount
+    if (scat_pool    !== undefined) patch.scat_pool    = scat_pool
+    if (ctp_pool     !== undefined) patch.ctp_pool     = ctp_pool
 
     await supabase
       .from('bonus_config')

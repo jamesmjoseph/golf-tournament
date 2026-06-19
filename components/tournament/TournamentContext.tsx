@@ -131,6 +131,20 @@ export default function TournamentProvider({
     return () => { supabase.removeChannel(channel) }
   }, [tournament.id])
 
+  // ── Real-time: bonus_config ───────────────────────────────────────────────
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`bonus_config:${tournament.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bonus_config', filter: `tournament_id=eq.${tournament.id}` },
+        payload => { setBonusConfig(payload.new as BonusConfig) },
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [tournament.id])
+
   // ── Real-time: bonus_results ──────────────────────────────────────────────
   useEffect(() => {
     const supabase = createClient()
@@ -291,6 +305,7 @@ export default function TournamentProvider({
       { data: matchesData },
       { data: scoresData },
       { data: bonusResultsData },
+      { data: bonusConfigData },
       { data: tData },
     ] = await Promise.all([
       supabase.from('teams').select('*').eq('tournament_id', tournament.id).order('sort_order'),
@@ -298,13 +313,15 @@ export default function TournamentProvider({
       supabase.from('matches').select('*').eq('tournament_id', tournament.id).order('sort_order'),
       supabase.from('scores').select('*').eq('tournament_id', tournament.id),
       supabase.from('bonus_results').select('*').eq('tournament_id', tournament.id),
+      supabase.from('bonus_config').select('*').eq('tournament_id', tournament.id).single(),
       supabase.from('tournaments').select('course_id').eq('id', tournament.id).single(),
     ])
-    if (teamsData)       setTeams(teamsData)
-    if (playersData)     setPlayers(playersData)
-    if (matchesData)     setMatches(matchesData)
-    if (scoresData)      setScores(scoresToMap(scoresData))
+    if (teamsData)        setTeams(teamsData)
+    if (playersData)      setPlayers(playersData)
+    if (matchesData)      setMatches(matchesData)
+    if (scoresData)       setScores(scoresToMap(scoresData))
     if (bonusResultsData) setBonusResults(bonusResultsData)
+    if (bonusConfigData)  setBonusConfig(bonusConfigData)
 
     if (tData?.course_id) {
       const [{ data: courseData }, { data: holesData }] = await Promise.all([
