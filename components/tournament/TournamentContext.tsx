@@ -287,11 +287,10 @@ export default function TournamentProvider({
       return next
     })
 
-    const token = getAdminToken(tournament.slug)
     const res = await fetch(`/api/tournaments/${tournament.slug}/bonus-ctp`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ adminToken: token, hole, player_id: playerId, distance_ft: distanceFt, distance_in: distanceIn }),
+      body: JSON.stringify({ hole, player_id: playerId, distance_ft: distanceFt, distance_in: distanceIn }),
     })
     if (!res.ok) console.error('CTP save failed:', await res.text())
   }, [tournament.id, tournament.slug])

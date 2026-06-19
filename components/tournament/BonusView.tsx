@@ -288,7 +288,6 @@ export default function BonusView() {
                 teams={teams}
                 br={getBonusResult(h.hole)}
                 log={ctpLog.filter(l => l.hole === h.hole)}
-                isAdmin={isAdmin}
                 ctpPayout={ctpPayoutEach}
                 onSelectPlayer={pid => updateCtp(h.hole, pid, null, null)}
                 onClear={() => updateCtp(h.hole, null, null, null)}
@@ -310,14 +309,13 @@ interface CtpCardProps {
   teams: { id: string; name: string; color_hex: string; light_hex: string }[]
   br: { ctp_winner_player_id: string | null; ctp_distance_ft: number | null; ctp_distance_in: number | null } | null
   log: { id: string; player_id: string | null; distance_ft: number | null; distance_in: number | null; recorded_at: string }[]
-  isAdmin: boolean
   ctpPayout: number
   onSelectPlayer: (pid: string) => void
   onClear: () => void
   onRecord: (pid: string, ft: number | null, inches: number | null) => void
 }
 
-function CtpHoleCard({ hole, players, teams, br, log, isAdmin, ctpPayout, onSelectPlayer, onClear, onRecord }: CtpCardProps) {
+function CtpHoleCard({ hole, players, teams, br, log, ctpPayout, onSelectPlayer, onClear, onRecord }: CtpCardProps) {
   const ctpId = br?.ctp_winner_player_id ?? null
   const [draftFt, setDraftFt]       = useState<string>(br?.ctp_distance_ft != null ? String(br.ctp_distance_ft) : '')
   const [draftIn, setDraftIn]       = useState<string>(br?.ctp_distance_in != null ? String(br.ctp_distance_in) : '')
@@ -368,60 +366,56 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, ctpPayout, onSele
         </div>
       )}
 
-      {/* Admin: player selector */}
-      {isAdmin && (
-        <>
-          <select
-            value={ctpId ?? ''}
-            onChange={e => {
-              const val = e.target.value
-              setDraftFt('')
-              setDraftIn('')
-              if (!val) onClear()
-              else onSelectPlayer(val)
-            }}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${ctpId ? 'var(--mint)' : 'var(--border)'}`, background: 'var(--surface)', color: ctpId ? 'var(--gold-lt)' : 'var(--muted)', fontSize: 13, outline: 'none', cursor: 'pointer', marginBottom: 10 }}
-          >
-            <option value="">— No leader set —</option>
-            {players.map(p => {
-              const team = teams.find(t => t.id === p.team_id)
-              return (
-                <option key={p.id} value={p.id}>{p.name}{team ? ` · ${team.name}` : ''}</option>
-              )
-            })}
-          </select>
+      {/* Player selector — open to all viewers */}
+      <select
+        value={ctpId ?? ''}
+        onChange={e => {
+          const val = e.target.value
+          setDraftFt('')
+          setDraftIn('')
+          if (!val) onClear()
+          else onSelectPlayer(val)
+        }}
+        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${ctpId ? 'var(--mint)' : 'var(--border)'}`, background: 'var(--surface)', color: ctpId ? 'var(--gold-lt)' : 'var(--muted)', fontSize: 13, outline: 'none', cursor: 'pointer', marginBottom: 10 }}
+      >
+        <option value="">— No leader set —</option>
+        {players.map(p => {
+          const team = teams.find(t => t.id === p.team_id)
+          return (
+            <option key={p.id} value={p.id}>{p.name}{team ? ` · ${team.name}` : ''}</option>
+          )
+        })}
+      </select>
 
-          {/* Distance input + Record */}
-          {ctpId && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>Distance:</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="ft"
-                value={draftFt}
-                onChange={e => setDraftFt(e.target.value)}
-                style={{ width: 48, textAlign: 'center', background: 'var(--bg-mid)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--gold-lt)', fontSize: 13, padding: '3px 4px', outline: 'none' }}
-              />
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>ft</span>
-              <input
-                type="number"
-                min="0"
-                max="11"
-                placeholder="in"
-                value={draftIn}
-                onChange={e => setDraftIn(e.target.value)}
-                style={{ width: 48, textAlign: 'center', background: 'var(--bg-mid)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--gold-lt)', fontSize: 13, padding: '3px 4px', outline: 'none' }}
-              />
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>in</span>
-              <button
-                onClick={handleRecord}
-                style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid var(--mint)', background: 'rgba(20,196,163,0.1)', color: 'var(--mint)', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>
-                Record
-              </button>
-            </div>
-          )}
-        </>
+      {/* Distance input + Record */}
+      {ctpId && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>Distance:</span>
+          <input
+            type="number"
+            min="0"
+            placeholder="ft"
+            value={draftFt}
+            onChange={e => setDraftFt(e.target.value)}
+            style={{ width: 48, textAlign: 'center', background: 'var(--bg-mid)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--gold-lt)', fontSize: 13, padding: '3px 4px', outline: 'none' }}
+          />
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>ft</span>
+          <input
+            type="number"
+            min="0"
+            max="11"
+            placeholder="in"
+            value={draftIn}
+            onChange={e => setDraftIn(e.target.value)}
+            style={{ width: 48, textAlign: 'center', background: 'var(--bg-mid)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--gold-lt)', fontSize: 13, padding: '3px 4px', outline: 'none' }}
+          />
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>in</span>
+          <button
+            onClick={handleRecord}
+            style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid var(--mint)', background: 'rgba(20,196,163,0.1)', color: 'var(--mint)', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>
+            Record
+          </button>
+        </div>
       )}
 
       {/* Running tally — latest distance per player, sorted closest first */}

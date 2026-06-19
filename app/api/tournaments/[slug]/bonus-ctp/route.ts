@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { validateAdminToken } from '@/lib/auth'
 
 export async function PUT(
   request: Request,
@@ -8,11 +7,7 @@ export async function PUT(
 ) {
   try {
     const { slug } = await params
-    const { adminToken, hole, player_id, distance_ft, distance_in } = await request.json()
-
-    if (!(await validateAdminToken(slug, adminToken))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { hole, player_id, distance_ft, distance_in } = await request.json()
 
     const supabase = createServiceClient()
     const { data: t } = await supabase.from('tournaments').select('id').eq('slug', slug).single()
