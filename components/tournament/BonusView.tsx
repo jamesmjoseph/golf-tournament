@@ -10,6 +10,7 @@ import type { Hole } from '@/lib/types'
 export default function BonusView() {
   const { tournament, holes, players, teams, bonusConfig, bonusResults, ctpLog, scores, updateScatHole, updateCtp, isAdmin, adminToken, refetch } = useTournament()
   const [savingConfig, setSavingConfig] = useState(false)
+  const [poolDraft, setPoolDraft] = useState(() => String(bonusConfig?.scat_pool ?? 0))
 
   const par3Holes = holes.filter(h => h.par === 3)
 
@@ -73,8 +74,13 @@ export default function BonusView() {
               <input
                 type="number"
                 min="0"
-                value={scatPool}
-                onChange={e => updateScatPool(parseInt(e.target.value) || 0)}
+                value={poolDraft}
+                onChange={e => setPoolDraft(e.target.value)}
+                onBlur={() => {
+                  const val = parseInt(poolDraft)
+                  if (!isNaN(val) && val >= 0) updateScatPool(val)
+                  else setPoolDraft(String(scatPool))
+                }}
                 style={{ width: 60, textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--gold)', fontSize: 15, fontWeight: 700, padding: '4px 0', outline: 'none' }}
               />
             </div>
@@ -297,7 +303,7 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, onSelectPlayer, o
       {ctpId && currentPlayer && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', background: (currentTeam?.color_hex ?? '#333') + '11', borderRadius: 8, border: `1px solid ${(currentTeam?.color_hex ?? 'var(--border)')}44` }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: currentTeam?.color_hex ?? 'var(--muted)', flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: currentTeam?.light_hex ?? 'var(--gold-lt)', flex: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: currentTeam?.color_hex ?? 'var(--gold-lt)', flex: 1 }}>
             🏆 {currentPlayer.name}
           </span>
           {distStr(br?.ctp_distance_ft ?? null, br?.ctp_distance_in ?? null) && (
@@ -324,7 +330,7 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, onSelectPlayer, o
                 <button
                   key={p.id}
                   onClick={() => { onSelectPlayer(p.id); setDraftFt(''); setDraftIn('') }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${active ? team?.color_hex : 'var(--border)'}`, background: active ? (team?.color_hex ?? '#333') + '22' : 'transparent', color: active ? team?.light_hex : 'var(--muted)', fontSize: 12, cursor: 'pointer', fontWeight: active ? 700 : 400 }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${active ? team?.color_hex : 'var(--border)'}`, background: active ? (team?.color_hex ?? '#333') + '22' : 'transparent', color: active ? team?.color_hex : 'var(--muted)', fontSize: 12, cursor: 'pointer', fontWeight: active ? 700 : 400 }}>
                   {p.name}
                 </button>
               )
@@ -364,9 +370,49 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, onSelectPlayer, o
         </>
       )}
 
-      {/* Log */}
+      {/* Running tally — latest distance per player, sorted closest first */}
+      {(() => {
+        const seen = new Set<string>()
+        const tally: typeof log = []
+        for (const entry of log) {
+          if (entry.player_id && !seen.has(entry.player_id) && (entry.distance_ft != null || entry.distance_in != null)) {
+            seen.add(entry.player_id)
+            tally.push(entry)
+          }
+        }
+        tally.sort((a, b) => {
+          const aIn = (a.distance_ft ?? 9999) * 12 + (a.distance_in ?? 0)
+          const bIn = (b.distance_ft ?? 9999) * 12 + (b.distance_in ?? 0)
+          return aIn - bIn
+        })
+        if (tally.length === 0) return null
+        return (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5, fontFamily: 'var(--font-mono)' }}>Standings</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {tally.map((entry, i) => {
+                const p = players.find(pl => pl.id === entry.player_id)
+                const t = p ? teams.find(tm => tm.id === p.team_id) : null
+                const d = distStr(entry.distance_ft, entry.distance_in)
+                const isLeader = i === 0
+                return (
+                  <div key={entry.player_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: isLeader ? (t?.color_hex ?? 'var(--gold)') + '11' : 'var(--surface)', borderRadius: 7, border: `1px solid ${isLeader ? (t?.color_hex ?? 'var(--border)') + '44' : 'var(--border)'}`, fontSize: 12 }}>
+                    <span style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 14, flexShrink: 0, textAlign: 'center' }}>{i + 1}</span>
+                    <span style={{ color: t?.color_hex ?? 'var(--gold-lt)', fontWeight: isLeader ? 700 : 500, flex: 1 }}>
+                      {isLeader && '🏆 '}{p?.name ?? '—'}
+                    </span>
+                    {d && <span style={{ color: isLeader ? 'var(--mint)' : 'var(--muted)', fontWeight: isLeader ? 700 : 500, fontFamily: 'var(--font-mono)' }}>{d}</span>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Full update log */}
       {log.length > 0 && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 10 }}>
           <button
             onClick={() => setShowLog(v => !v)}
             style={{ fontSize: 10, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>
@@ -375,14 +421,14 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, onSelectPlayer, o
           {showLog && (
             <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {log.map(entry => {
-                const p   = players.find(pl => pl.id === entry.player_id)
-                const t   = p ? teams.find(tm => tm.id === p.team_id) : null
-                const d   = distStr(entry.distance_ft, entry.distance_in)
-                const ts  = new Date(entry.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                const p  = players.find(pl => pl.id === entry.player_id)
+                const t  = p ? teams.find(tm => tm.id === p.team_id) : null
+                const d  = distStr(entry.distance_ft, entry.distance_in)
+                const ts = new Date(entry.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 return (
                   <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: 'var(--surface)', borderRadius: 6, fontSize: 11 }}>
                     <span style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{ts}</span>
-                    <span style={{ color: t?.light_hex ?? 'var(--gold-lt)', fontWeight: 600, flex: 1 }}>{p?.name ?? '—'}</span>
+                    <span style={{ color: t?.color_hex ?? 'var(--gold-lt)', fontWeight: 600, flex: 1 }}>{p?.name ?? '—'}</span>
                     {d && <span style={{ color: 'var(--mint)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{d}</span>}
                   </div>
                 )
