@@ -24,10 +24,15 @@ export async function PUT(
     if (scat_pool    !== undefined) patch.scat_pool    = scat_pool
     if (ctp_pool     !== undefined) patch.ctp_pool     = ctp_pool
 
-    await supabase
+    const { error } = await supabase
       .from('bonus_config')
       .update(patch)
       .eq('tournament_id', t.id)
+
+    if (error) {
+      console.error('bonus_config update error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {

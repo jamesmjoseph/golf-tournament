@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTournament } from './TournamentContext'
 import SectionHeader from '@/components/ui/SectionHeader'
 import Toggle from '@/components/ui/Toggle'
@@ -12,6 +12,12 @@ export default function BonusView() {
   const [savingConfig, setSavingConfig] = useState(false)
   const [poolDraft, setPoolDraft]       = useState(() => String(bonusConfig?.scat_pool ?? 0))
   const [ctpPoolDraft, setCtpPoolDraft] = useState(() => String(bonusConfig?.ctp_pool ?? 0))
+
+  useEffect(() => {
+    if (!bonusConfig) return
+    setPoolDraft(String(bonusConfig.scat_pool))
+    setCtpPoolDraft(String(bonusConfig.ctp_pool))
+  }, [bonusConfig?.scat_pool, bonusConfig?.ctp_pool])
 
   const par3Holes = holes.filter(h => h.par === 3)
 
@@ -136,7 +142,7 @@ export default function BonusView() {
                       ) : winner ? (
                         <>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? 'var(--muted)', flexShrink: 0 }} />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: team?.light_hex ?? 'var(--gold-lt)', flex: 1 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: team?.color_hex ?? 'var(--gold-lt)', flex: 1 }}>
                             {winner.name}
                             {overrideId && <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 400, marginLeft: 6 }}>(override)</span>}
                           </span>
@@ -210,7 +216,7 @@ export default function BonusView() {
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? 'var(--muted)' }} />
-                            <span style={{ fontSize: 13, color: team?.light_hex ?? 'var(--gold-lt)', fontWeight: 700 }}>{player.name}</span>
+                            <span style={{ fontSize: 13, color: team?.color_hex ?? 'var(--gold-lt)', fontWeight: 700 }}>{player.name}</span>
                             <span style={{ fontSize: 11, color: 'var(--muted)' }}>{team?.name}</span>
                           </div>
                           <div style={{ textAlign: 'right' }}>
@@ -365,25 +371,25 @@ function CtpHoleCard({ hole, players, teams, br, log, isAdmin, ctpPayout, onSele
       {/* Admin: player selector */}
       {isAdmin && (
         <>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: ctpId ? 10 : 0 }}>
-            <button
-              onClick={onClear}
-              style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${!ctpId ? 'var(--gold)' : 'var(--border)'}`, background: !ctpId ? 'rgba(47,109,240,0.08)' : 'transparent', color: !ctpId ? 'var(--gold)' : 'var(--muted)', fontSize: 11, cursor: 'pointer', fontWeight: !ctpId ? 700 : 400 }}>
-              None
-            </button>
+          <select
+            value={ctpId ?? ''}
+            onChange={e => {
+              const val = e.target.value
+              setDraftFt('')
+              setDraftIn('')
+              if (!val) onClear()
+              else onSelectPlayer(val)
+            }}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${ctpId ? 'var(--mint)' : 'var(--border)'}`, background: 'var(--surface)', color: ctpId ? 'var(--gold-lt)' : 'var(--muted)', fontSize: 13, outline: 'none', cursor: 'pointer', marginBottom: 10 }}
+          >
+            <option value="">— No leader set —</option>
             {players.map(p => {
               const team = teams.find(t => t.id === p.team_id)
-              const active = ctpId === p.id
               return (
-                <button
-                  key={p.id}
-                  onClick={() => { onSelectPlayer(p.id); setDraftFt(''); setDraftIn('') }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${active ? team?.color_hex : 'var(--border)'}`, background: active ? (team?.color_hex ?? '#333') + '22' : 'transparent', color: active ? team?.color_hex : 'var(--muted)', fontSize: 12, cursor: 'pointer', fontWeight: active ? 700 : 400 }}>
-                  {p.name}
-                </button>
+                <option key={p.id} value={p.id}>{p.name}{team ? ` · ${team.name}` : ''}</option>
               )
             })}
-          </div>
+          </select>
 
           {/* Distance input + Record */}
           {ctpId && (

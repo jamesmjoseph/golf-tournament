@@ -21,13 +21,19 @@ export default function SummaryView() {
   const winningHoles = holes.filter(h => effectiveScatWinner(h.hole, players, scores, bonusResults) !== null).length
   const payoutPerHole = winningHoles > 0 ? scatPool / winningHoles : 0
 
+  const ctpPool = bonusConfig?.ctp_pool ?? 0
+
   const ctpList = bonusResults
     .filter(r => r.ctp_winner_player_id)
     .map(r => ({
       hole: r.hole,
       player: players.find(p => p.id === r.ctp_winner_player_id),
+      distFt: r.ctp_distance_ft,
+      distIn: r.ctp_distance_in,
     }))
     .filter(x => x.player)
+
+  const ctpPayoutPerHole = ctpList.length > 0 ? ctpPool / ctpList.length : 0
 
   return (
     <div>
@@ -62,15 +68,15 @@ export default function SummaryView() {
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--gold)', marginBottom: 4, fontWeight: 700 }}>{m.label}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                    <span style={{ color: mWin === 'upper' ? upperTeam?.light_hex : 'var(--gold-lt)' }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
+                    <span style={{ color: mWin === 'upper' ? upperTeam?.color_hex : 'var(--gold-lt)' }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
                     <span style={{ color: 'var(--muted)', margin: '0 6px' }}>vs</span>
-                    <span style={{ color: mWin === 'lower' ? lowerTeam?.light_hex : 'var(--gold-lt)' }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
+                    <span style={{ color: mWin === 'lower' ? lowerTeam?.color_hex : 'var(--gold-lt)' }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
                   </div>
                 </div>
                 <div style={{ fontSize: 20, fontWeight: 800 }}>
-                  <span style={{ color: mWin === 'upper' ? upperTeam?.light_hex : 'var(--muted)' }}>{t.upper}</span>
+                  <span style={{ color: mWin === 'upper' ? upperTeam?.color_hex : 'var(--muted)' }}>{t.upper}</span>
                   <span style={{ color: 'var(--muted)', margin: '0 6px' }}>–</span>
-                  <span style={{ color: mWin === 'lower' ? lowerTeam?.light_hex : 'var(--muted)' }}>{t.lower}</span>
+                  <span style={{ color: mWin === 'lower' ? lowerTeam?.color_hex : 'var(--muted)' }}>{t.lower}</span>
                 </div>
               </div>
             </div>
@@ -94,7 +100,7 @@ export default function SummaryView() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? 'var(--muted)' }} />
-                    <span style={{ fontSize: 14, fontWeight: 700, color: team?.light_hex ?? 'var(--gold-lt)' }}>{player.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: team?.color_hex ?? 'var(--gold-lt)' }}>{player.name}</span>
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{team?.name}</span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -117,12 +123,22 @@ export default function SummaryView() {
         <>
           <SectionHeader title="Closest to the Pin" />
           <div style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: '1px solid rgba(20,196,163,0.25)' }}>
-            {ctpList.map(({ hole, player }) => {
+            {ctpList.map(({ hole, player, distFt, distIn }) => {
               const team = teams.find(t => t.id === player?.team_id)
+              const distParts = [distFt != null ? `${distFt}'` : null, distIn != null ? `${distIn}"` : null].filter(Boolean)
+              const dist = distParts.length > 0 ? distParts.join(' ') : null
               return (
-                <div key={hole} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <div key={hole} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
                   <span style={{ color: 'var(--muted)', fontSize: 13 }}>📍 Hole {hole}</span>
-                  <span style={{ fontWeight: 700, color: team?.light_hex ?? 'var(--gold-lt)', fontSize: 13 }}>{player?.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {dist && <span style={{ color: 'var(--mint)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{dist}</span>}
+                    <span style={{ fontWeight: 700, color: team?.color_hex ?? 'var(--gold-lt)', fontSize: 13 }}>{player?.name}</span>
+                    {ctpPool > 0 && ctpPayoutPerHole > 0 && (
+                      <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--mint)' }}>
+                        ${ctpPayoutPerHole % 1 === 0 ? ctpPayoutPerHole : ctpPayoutPerHole.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )
             })}
