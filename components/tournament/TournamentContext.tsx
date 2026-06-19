@@ -148,35 +148,62 @@ export default function TournamentProvider({
     return () => { supabase.removeChannel(channel) }
   }, [tournament.id])
 
-  // ── Score update (via RPC for atomic audit log) ───────────────────────────
+  // ── Score update — optimistic-first, then persist ────────────────────────
   const updateScore = useCallback(async (playerId: string, hole: number, rawScore: number | null) => {
+    // Update local state immediately so the UI responds on click
+    if (rawScore === null) {
+      setScores(prev => {
+        const next = { ...prev, [playerId]: { ...(prev[playerId] ?? {}) } }
+        delete next[playerId][hole]
+        return next
+      })
+    } else {
+      setScores(prev => ({
+        ...prev,
+        [playerId]: { ...(prev[playerId] ?? {}), [hole]: rawScore },
+      }))
+    }
+
+    // Persist to Supabase (real-time will confirm but UI is already updated)
     const supabase = createClient()
     if (rawScore === null) {
-      await supabase.from('scores').delete().match({ player_id: playerId, hole })
+      const { error } = await supabase.from('scores').delete().match({ player_id: playerId, hole })
+      if (error) console.error('Score delete failed:', error)
       return
     }
-    await supabase.rpc('upsert_score', {
+    const { error } = await supabase.rpc('upsert_score', {
       p_player_id: playerId,
       p_tournament_id: tournament.id,
       p_hole: hole,
       p_raw_score: rawScore,
       p_session_id: getSessionId(),
     })
+    if (error) console.error('Score save failed:', error)
   }, [tournament.id])
 
-  // ── Bonus result update ───────────────────────────────────────────────────
+  // ── Bonus result update — optimistic-first ───────────────────────────────
   const updateBonusResult = useCallback(async (
     hole: number,
     scatTeamId: string | null,
     ctpPlayerId: string | null,
   ) => {
+    // Optimistic update
+    setBonusResults(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(r => r.hole === hole)
+      const updated = { tournament_id: tournament.id, hole, scat_winner_team_id: scatTeamId, ctp_winner_player_id: ctpPlayerId } as BonusResult
+      if (idx >= 0) { next[idx] = { ...next[idx], ...updated } } else { next.push({ id: '', ...updated }) }
+      return next
+    })
+
     const supabase = createClient()
-    await supabase.rpc('upsert_bonus', {
+    const { error } = await supabase.rpc('upsert_bonus', {
       p_tournament_id: tournament.id,
       p_hole: hole,
       p_scat_team_id: scatTeamId,
       p_ctp_player_id: ctpPlayerId,
     })
+    if (error) console.error('Bonus save failed:', error)
   }, [tournament.id])
 
   // ── Refetch all mutable data ──────────────────────────────────────────────
