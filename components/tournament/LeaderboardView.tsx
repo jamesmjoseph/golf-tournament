@@ -54,19 +54,19 @@ export default function LeaderboardView() {
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 4 }}>{m.label}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                    <span style={{ color: upperTeam?.light_hex }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
+                    <span style={{ color: upperTeam?.color_hex }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
                     <span style={{ color: 'var(--muted)', margin: '0 6px' }}>vs</span>
-                    <span style={{ color: lowerTeam?.light_hex }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
+                    <span style={{ color: lowerTeam?.color_hex }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2, opacity: 0.7 }}>{holesPlayed} / {holes.length} holes played</div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: t.upper >= t.lower ? upperTeam?.light_hex : 'var(--muted)' }}>{t.upper}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: t.upper >= t.lower ? upperTeam?.color_hex : 'var(--muted)' }}>{t.upper}</div>
                   </div>
                   <div style={{ color: 'var(--muted)' }}>–</div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: t.lower >= t.upper ? lowerTeam?.light_hex : 'var(--muted)' }}>{t.lower}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: t.lower >= t.upper ? lowerTeam?.color_hex : 'var(--muted)' }}>{t.lower}</div>
                   </div>
                 </div>
               </div>
