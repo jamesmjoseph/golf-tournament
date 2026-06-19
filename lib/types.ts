@@ -95,11 +95,3 @@ export interface CupTotals {
   lower: number
   total: number
 }
-
-// Shape returned by /api/course-lookup before saving to DB
-export interface CoursePreview {
-  name: string
-  location: string
-  tee_color: string
-  holes: Array<{ hole: number; par: number; hcp: number; yards: number | null }>
-}
