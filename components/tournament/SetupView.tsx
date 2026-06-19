@@ -15,7 +15,7 @@ export default function SetupView() {
     <div>
       {/* QR / Share */}
       <SectionHeader title="Share Tournament" subtitle="Anyone with this link can view and score" />
-      <div style={{ background: 'var(--surface)', border: '1px solid #333', borderRadius: 12, padding: 20, marginBottom: 24, textAlign: 'center' }}>
+      <div style={{ background: 'var(--bg-mid)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 24, textAlign: 'center' }}>
         <QRCodeDisplay url={appUrl} label={tournament.name} />
       </div>
 
@@ -77,13 +77,13 @@ function HcpModeAdmin() {
             style={{
               display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
               padding: '12px 16px', borderRadius: 10, cursor: isAdmin ? 'pointer' : 'default',
-              border: `1px solid ${active ? 'var(--gold)' : '#444'}`,
-              background: active ? '#c8a84b22' : 'var(--surface)',
+              border: `1px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
+              background: active ? 'rgba(47,109,240,0.08)' : 'var(--surface)',
               opacity: saving ? 0.6 : 1,
             }}>
             <div style={{
               width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-              border: `2px solid ${active ? 'var(--gold)' : '#555'}`,
+              border: `2px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
               background: active ? 'var(--gold)' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -150,8 +150,8 @@ function CourseAdmin() {
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '12px 16px', borderRadius: 10, cursor: active ? 'default' : 'pointer',
-                border: `1px solid ${active ? 'var(--gold)' : '#444'}`,
-                background: active ? '#c8a84b22' : 'var(--surface)',
+                border: `1px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
+                background: active ? 'rgba(47,109,240,0.08)' : 'var(--surface)',
                 opacity: saving ? 0.6 : 1,
               }}>
               <div style={{ textAlign: 'left' }}>
@@ -230,7 +230,7 @@ function ScorecardTable() {
             </thead>
             <tbody>
               {holes.map((h, i) => (
-                <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
+                <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(47,109,240,0.03)' : 'transparent' }}>
                   <td style={{ padding: '6px 6px', textAlign: 'center', fontWeight: 'bold', color: h.hole < 10 ? '#7fb3d3' : 'var(--gold-lt)' }}>
                     {h.hole}{h.hole === 10 ? ' ↩' : ''}
                   </td>
@@ -271,7 +271,7 @@ function ScorecardTable() {
           </thead>
           <tbody>
             {draft.map((h, i) => (
-              <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent' }}>
+              <tr key={h.hole} style={{ background: i % 2 === 0 ? 'rgba(47,109,240,0.03)' : 'transparent' }}>
                 <td style={{ padding: '4px 6px', textAlign: 'center', fontWeight: 'bold', color: h.hole < 10 ? '#7fb3d3' : 'var(--gold-lt)' }}>
                   {h.hole}{h.hole === 10 ? ' ↩' : ''}
                 </td>
@@ -306,7 +306,7 @@ function ScorecardTable() {
       {err && <div style={{ color: '#f1948a', fontSize: 12, margin: '6px 0' }}>{err}</div>}
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <button onClick={save} disabled={saving} style={{ ...adminBtnStyle, flex: 1 }}>{saving ? 'Saving…' : '✓ Save Scorecard'}</button>
-        <button onClick={() => setEditing(false)} style={{ ...adminBtnStyle, background: 'transparent', border: '1px solid #444', color: 'var(--muted)' }}>Cancel</button>
+        <button onClick={() => setEditing(false)} style={{ ...adminBtnStyle, background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)' }}>Cancel</button>
       </div>
     </div>
   )
@@ -413,23 +413,23 @@ function PlayersAdmin({ teams, players, slug, onSave }: { teams: Team[]; players
       {err && <div style={{ color: '#f1948a', fontSize: 12, marginBottom: 8 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={save} disabled={saving} style={{ ...adminBtnStyle, flex: 1 }}>{saving ? 'Saving…' : '✓ Save Players'}</button>
-        <button onClick={() => setEditing(false)} style={{ ...adminBtnStyle, background: 'transparent', border: '1px solid #444', color: 'var(--muted)' }}>Cancel</button>
+        <button onClick={() => setEditing(false)} style={{ ...adminBtnStyle, background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)' }}>Cancel</button>
       </div>
     </div>
   )
 }
 
 const cellInputSt: React.CSSProperties = {
-  width: 44, textAlign: 'center', background: 'rgba(255,255,255,0.08)',
-  border: '1px solid #555', borderRadius: 5, fontSize: 12,
-  padding: '4px 2px', outline: 'none',
+  width: 44, textAlign: 'center', background: 'var(--surface)',
+  border: '1px solid var(--border)', borderRadius: 5, fontSize: 12,
+  color: 'var(--gold-lt)', padding: '4px 2px', outline: 'none',
 }
 const inputSt: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.06)', border: '1px solid #444', borderRadius: 8,
+  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
   color: 'var(--gold-lt)', fontSize: 14, padding: '8px 10px', outline: 'none',
 }
 const adminBtnStyle: React.CSSProperties = {
   padding: '8px 16px', borderRadius: 8, border: '1px solid var(--gold)',
-  background: 'rgba(200,168,75,0.12)', color: 'var(--gold)', fontSize: 12,
-  cursor: 'pointer', fontWeight: 'bold',
+  background: 'rgba(47,109,240,0.08)', color: 'var(--gold)', fontSize: 12,
+  cursor: 'pointer', fontWeight: 700,
 }

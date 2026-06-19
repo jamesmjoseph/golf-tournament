@@ -2,10 +2,10 @@ export default function Toggle({ on, onToggle }: { on: boolean; onToggle: () => 
   return (
     <button onClick={onToggle} style={{
       width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
-      background: on ? 'var(--gold)' : '#333', position: 'relative', flexShrink: 0,
+      background: on ? 'var(--gold)' : 'var(--border)', position: 'relative', flexShrink: 0,
     }}>
       <div style={{
-        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+        width: 18, height: 18, borderRadius: '50%', background: on ? '#fff' : 'var(--muted)',
         position: 'absolute', top: 3, left: on ? 23 : 3, transition: 'left 0.15s',
       }} />
     </button>

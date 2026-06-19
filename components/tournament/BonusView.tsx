@@ -49,7 +49,6 @@ export default function BonusView() {
     await refetch()
   }
 
-  // Per-player scat win totals
   const scatWinsByPlayer = players.map(p => {
     const wins = holes.filter(h => scatWinner(h.hole, players, scores)?.id === p.id).length
     return { player: p, wins }
@@ -59,16 +58,16 @@ export default function BonusView() {
     <div>
       {/* Scat Pool */}
       <SectionHeader title="Scat Pool" subtitle="Lowest individual raw score per hole · ties pay nothing" />
-      <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 16, border: '1px solid #c8a84b33', marginBottom: 24 }}>
+      <div style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', marginBottom: 24, boxShadow: '0 2px 8px rgba(19,32,54,.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
           {isAdmin && <Toggle on={bonusConfig?.scat_enabled ?? true} onToggle={toggleScat} />}
-          <span style={{ fontWeight: 'bold' }}>Scat {bonusConfig?.scat_enabled ? 'Enabled' : 'Disabled'}</span>
+          <span style={{ fontWeight: 700 }}>Scat {bonusConfig?.scat_enabled ? 'Enabled' : 'Disabled'}</span>
           {isAdmin && bonusConfig?.scat_enabled && (
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>$/hole:</span>
               <input type="number" min="1" value={bonusConfig?.scat_amount ?? 5}
                 onChange={e => updateScatAmount(parseInt(e.target.value) || 1)}
-                style={{ width: 50, textAlign: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid #444', borderRadius: 6, color: 'var(--gold)', fontSize: 15, fontWeight: 'bold', padding: '4px 0', outline: 'none' }} />
+                style={{ width: 50, textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--gold)', fontSize: 15, fontWeight: 700, padding: '4px 0', outline: 'none' }} />
             </div>
           )}
         </div>
@@ -76,7 +75,7 @@ export default function BonusView() {
         {bonusConfig?.scat_enabled && (
           <>
             {/* Auto-computed hole results */}
-            <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Results by Hole</div>
+            <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'var(--font-mono)' }}>Results by Hole</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
               {holes.map(h => {
                 const winner = scatWinner(h.hole, players, scores)
@@ -91,24 +90,24 @@ export default function BonusView() {
                 return (
                   <div key={h.hole} style={{
                     display: 'flex', alignItems: 'center', gap: 10,
-                    background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '8px 12px',
-                    border: `1px solid ${winner ? (team?.color_hex ?? '#555') + '55' : hasTie ? '#c8a84b33' : '#2a2a2a'}`,
+                    background: 'var(--surface)', borderRadius: 8, padding: '8px 12px',
+                    border: `1px solid ${winner ? (team?.color_hex ?? 'var(--border)') + '44' : hasTie ? 'rgba(47,109,240,0.2)' : 'var(--border)'}`,
                   }}>
-                    <span style={{ fontSize: 11, color: 'var(--muted)', width: 60, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: 'var(--muted)', width: 60, flexShrink: 0, fontFamily: 'var(--font-mono)' }}>
                       H{h.hole} (p{h.par})
                     </span>
                     {winner ? (
                       <>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? '#aaa', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 'bold', color: team?.light_hex ?? 'var(--gold-lt)', flex: 1 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? 'var(--muted)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: team?.light_hex ?? 'var(--gold-lt)', flex: 1 }}>
                           {winner.name}
                         </span>
-                        <span style={{ fontSize: 11, color: '#58d68d', fontWeight: 'bold' }}>{rawScore}</span>
+                        <span style={{ fontSize: 11, color: 'var(--mint)', fontWeight: 700 }}>{rawScore}</span>
                       </>
                     ) : hasTie ? (
                       <span style={{ fontSize: 12, color: 'var(--gold)', fontStyle: 'italic', flex: 1 }}>Tied — no award</span>
                     ) : (
-                      <span style={{ fontSize: 12, color: '#444', flex: 1 }}>—</span>
+                      <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1 }}>—</span>
                     )}
                   </div>
                 )
@@ -118,7 +117,7 @@ export default function BonusView() {
             {/* Per-player totals */}
             {scatWinsByPlayer.length > 0 && (
               <>
-                <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Player Totals</div>
+                <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'var(--font-mono)' }}>Player Totals</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {scatWinsByPlayer
                     .sort((a, b) => b.wins - a.wins)
@@ -128,17 +127,17 @@ export default function BonusView() {
                       return (
                         <div key={player.id} style={{
                           display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between',
-                          padding: '10px 14px', background: (team?.color_hex ?? '#333') + '22',
-                          borderRadius: 8, border: `1px solid ${(team?.color_hex ?? '#444')}44`,
+                          padding: '10px 14px', background: (team?.color_hex ?? '#333') + '11',
+                          borderRadius: 8, border: `1px solid ${(team?.color_hex ?? 'var(--border)')}33`,
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? '#aaa' }} />
-                            <span style={{ fontSize: 13, color: team?.light_hex ?? 'var(--gold-lt)' }}>{player.name}</span>
+                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? 'var(--muted)' }} />
+                            <span style={{ fontSize: 13, color: team?.light_hex ?? 'var(--gold-lt)', fontWeight: 700 }}>{player.name}</span>
                             <span style={{ fontSize: 11, color: 'var(--muted)' }}>{team?.name}</span>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <span style={{ fontSize: 13, color: '#aaa' }}>{wins} hole{wins !== 1 ? 's' : ''} · </span>
-                            <span style={{ fontSize: 15, fontWeight: 'bold', color: '#58d68d' }}>${earnings}</span>
+                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{wins} hole{wins !== 1 ? 's' : ''} · </span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--mint)' }}>${earnings}</span>
                           </div>
                         </div>
                       )
@@ -166,27 +165,27 @@ export default function BonusView() {
               const ctpId = br?.ctp_winner_player_id
               const named = players.filter(p => p.name)
               return (
-                <div key={h.hole} style={{ background: 'var(--surface)', borderRadius: 12, padding: 14, border: '1px solid #58d68d33' }}>
-                  <div style={{ fontSize: 13, fontWeight: 'bold', color: '#58d68d', marginBottom: 10 }}>
+                <div key={h.hole} style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: 14, border: '1px solid rgba(20,196,163,0.25)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--mint)', marginBottom: 10 }}>
                     📍 Hole {h.hole} · Par 3{h.yards ? ` · ${h.yards} yds` : ''}
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button onClick={() => updateBonusResult(h.hole, null, null)}
-                      style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${!ctpId ? 'var(--gold)' : '#444'}`, background: !ctpId ? '#c8a84b22' : 'transparent', color: !ctpId ? 'var(--gold)' : '#666', fontSize: 11, cursor: 'pointer' }}>
+                      style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${!ctpId ? 'var(--gold)' : 'var(--border)'}`, background: !ctpId ? 'rgba(47,109,240,0.08)' : 'transparent', color: !ctpId ? 'var(--gold)' : 'var(--muted)', fontSize: 11, cursor: 'pointer', fontWeight: !ctpId ? 700 : 400 }}>
                       None
                     </button>
                     {named.map(p => {
                       const team = teams.find(t => t.id === p.team_id)
                       return (
                         <button key={p.id} onClick={() => updateBonusResult(h.hole, null, ctpId === p.id ? null : p.id)}
-                          style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${ctpId === p.id ? team?.color_hex : '#444'}`, background: ctpId === p.id ? (team?.color_hex ?? '#333') + '44' : 'transparent', color: ctpId === p.id ? team?.light_hex : '#777', fontSize: 12, cursor: 'pointer' }}>
+                          style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${ctpId === p.id ? team?.color_hex : 'var(--border)'}`, background: ctpId === p.id ? (team?.color_hex ?? '#333') + '22' : 'transparent', color: ctpId === p.id ? team?.light_hex : 'var(--muted)', fontSize: 12, cursor: 'pointer', fontWeight: ctpId === p.id ? 700 : 400 }}>
                           {p.name}
                         </button>
                       )
                     })}
                   </div>
                   {ctpId && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: '#58d68d' }}>
+                    <div style={{ marginTop: 8, fontSize: 12, color: 'var(--mint)', fontWeight: 700 }}>
                       🏆 {named.find(p => p.id === ctpId)?.name}
                     </div>
                   )}

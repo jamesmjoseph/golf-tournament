@@ -28,24 +28,28 @@ export default function TournamentApp() {
   }
 
   return (
-    <div style={{ fontFamily: "'Georgia', serif", background: 'var(--bg)', minHeight: '100vh', color: 'var(--gold-lt)' }}>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--gold-lt)' }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(160deg, var(--bg) 0%, var(--bg-mid) 60%, var(--bg) 100%)', borderBottom: '2px solid var(--gold)', padding: '14px 16px 0' }}>
+      <div style={{
+        background: 'var(--navy)',
+        padding: '14px 16px 0',
+        boxShadow: '0 4px 16px rgba(19,32,54,.18)',
+      }}>
         <div style={{ textAlign: 'center', paddingBottom: 10 }}>
-          <div style={{ fontSize: 10, letterSpacing: 4, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 2 }}>
+          <div style={{ fontSize: 10, letterSpacing: 4, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'var(--font-mono)' }}>
             {formatDate(tournament.date)}{course ? ` · ${course.name}` : ''}
           </div>
-          <div style={{ fontSize: 22, fontWeight: 'bold', letterSpacing: 2 }}>⛳ {tournament.name.toUpperCase()}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1, color: '#ffffff' }}>⛳ {tournament.name.toUpperCase()}</div>
           <div style={{ fontSize: 11, letterSpacing: 2, marginTop: 2, display: 'flex', justifyContent: 'center', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ color: upperTeam?.light_hex }}>{upperTeam?.name}</span>
-            <span style={{ color: 'var(--gold)' }}>
+            <span style={{ color: 'var(--gold)', fontWeight: 700 }}>
               {cup.total > 0 ? `${cup.upper} – ${cup.lower}` : 'vs'}
             </span>
             <span style={{ color: lowerTeam?.light_hex }}>{lowerTeam?.name}</span>
           </div>
-          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
             {matches.length} Matches · 2v2 Best Ball · {hcpMode === 'low' ? 'Play Off Low' : 'Against Course'} · 1 pt/hole
-            {isAdmin && <span style={{ color: 'var(--gold)', marginLeft: 8 }}>· ADMIN</span>}
+            {isAdmin && <span style={{ color: 'var(--mint)', marginLeft: 8 }}>· ADMIN</span>}
           </div>
         </div>
 
@@ -53,10 +57,11 @@ export default function TournamentApp() {
         <div style={{ display: 'flex', overflowX: 'auto' }}>
           {ALL_TABS.map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              flex: '0 0 auto', padding: '8px 10px', fontSize: 10, fontWeight: 'bold',
+              flex: '0 0 auto', padding: '8px 10px', fontSize: 10, fontWeight: 700,
               letterSpacing: 1, textTransform: 'uppercase', border: 'none', cursor: 'pointer',
               borderBottom: tab === t ? '3px solid var(--gold)' : '3px solid transparent',
-              background: 'transparent', color: tab === t ? 'var(--gold)' : 'var(--muted)',
+              background: 'transparent',
+              color: tab === t ? 'var(--gold)' : 'rgba(255,255,255,0.45)',
             }}>{t}</button>
           ))}
         </div>

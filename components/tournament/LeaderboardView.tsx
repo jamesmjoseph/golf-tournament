@@ -10,28 +10,28 @@ export default function LeaderboardView() {
   return (
     <div>
       {/* Cup totals */}
-      <div style={{ background: 'linear-gradient(135deg,#1e2d00,var(--bg-mid))', borderRadius: 14, padding: 20, marginBottom: 20, border: '1px solid #c8a84b55', textAlign: 'center' }}>
-        <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 10 }}>
+      <div style={{ background: 'var(--navy)', borderRadius: 16, padding: 20, marginBottom: 20, boxShadow: '0 8px 24px rgba(19,32,54,.18)', textAlign: 'center' }}>
+        <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
           Total Points
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 10, color: upperTeam?.light_hex, letterSpacing: 1 }}>{upperTeam?.name?.toUpperCase()}</div>
-            <div style={{ fontSize: 52, fontWeight: 'bold', color: upperTeam?.light_hex, lineHeight: 1 }}>{cup.upper}</div>
+            <div style={{ fontSize: 10, color: upperTeam?.light_hex, letterSpacing: 1, fontWeight: 700 }}>{upperTeam?.name?.toUpperCase()}</div>
+            <div style={{ fontSize: 52, fontWeight: 800, color: upperTeam?.light_hex, lineHeight: 1 }}>{cup.upper}</div>
           </div>
-          <div style={{ fontSize: 28, color: 'var(--muted)' }}>–</div>
+          <div style={{ fontSize: 28, color: 'rgba(255,255,255,0.3)' }}>–</div>
           <div>
-            <div style={{ fontSize: 10, color: lowerTeam?.light_hex, letterSpacing: 1 }}>{lowerTeam?.name?.toUpperCase()}</div>
-            <div style={{ fontSize: 52, fontWeight: 'bold', color: lowerTeam?.light_hex, lineHeight: 1 }}>{cup.lower}</div>
+            <div style={{ fontSize: 10, color: lowerTeam?.light_hex, letterSpacing: 1, fontWeight: 700 }}>{lowerTeam?.name?.toUpperCase()}</div>
+            <div style={{ fontSize: 52, fontWeight: 800, color: lowerTeam?.light_hex, lineHeight: 1 }}>{cup.lower}</div>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>of {cup.total} points played</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>of {cup.total} points played</div>
         {cup.upper !== cup.lower && cup.total > 0 && (
           <div style={{ marginTop: 12, display: 'inline-block', padding: '6px 18px', borderRadius: 8,
-            background: (cup.upper > cup.lower ? upperTeam?.color_hex : lowerTeam?.color_hex) + '44',
+            background: (cup.upper > cup.lower ? upperTeam?.color_hex : lowerTeam?.color_hex) + '33',
             border: `1px solid ${cup.upper > cup.lower ? upperTeam?.color_hex : lowerTeam?.color_hex}`,
             color: cup.upper > cup.lower ? upperTeam?.light_hex : lowerTeam?.light_hex,
-            fontWeight: 'bold', fontSize: 14,
+            fontWeight: 700, fontSize: 14,
           }}>
             {cup.upper > cup.lower ? upperTeam?.name : lowerTeam?.name} leads by {Math.abs(cup.upper - cup.lower)} pts
           </div>
@@ -49,24 +49,24 @@ export default function LeaderboardView() {
           const holesPlayed = holes.filter(h => holeMatchPoints(m, h.hole, holes, players, scores, hcpMode) !== null).length
 
           return (
-            <div key={m.id} style={{ background: 'var(--surface)', borderRadius: 10, padding: '14px 16px', border: '1px solid #333' }}>
+            <div key={m.id} style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: '14px 16px', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(19,32,54,.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--gold)', marginBottom: 4 }}>{m.label}</div>
-                  <div style={{ fontSize: 12, color: '#aaa' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
                     <span style={{ color: upperTeam?.light_hex }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
                     <span style={{ color: 'var(--muted)', margin: '0 6px' }}>vs</span>
                     <span style={{ color: lowerTeam?.light_hex }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
                   </div>
-                  <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{holesPlayed} / {holes.length} holes played</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2, opacity: 0.7 }}>{holesPlayed} / {holes.length} holes played</div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 'bold', color: t.upper >= t.lower ? upperTeam?.light_hex : '#aaa' }}>{t.upper}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: t.upper >= t.lower ? upperTeam?.light_hex : 'var(--muted)' }}>{t.upper}</div>
                   </div>
                   <div style={{ color: 'var(--muted)' }}>–</div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 'bold', color: t.lower >= t.upper ? lowerTeam?.light_hex : '#aaa' }}>{t.lower}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: t.lower >= t.upper ? lowerTeam?.light_hex : 'var(--muted)' }}>{t.lower}</div>
                   </div>
                 </div>
               </div>
@@ -77,12 +77,13 @@ export default function LeaderboardView() {
                   const r = holeMatchPoints(m, h.hole, holes, players, scores, hcpMode)
                   const bg = r
                     ? r.upper > r.lower ? upperTeam?.color_hex : r.lower > r.upper ? lowerTeam?.color_hex : 'var(--gold)'
-                    : '#333'
+                    : 'var(--border)'
                   return (
                     <div key={h.hole} title={`Hole ${h.hole}`} style={{
                       width: 18, height: 18, borderRadius: 4, background: bg,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, color: r ? '#fff' : '#555',
+                      fontSize: 9, color: r ? '#fff' : 'var(--muted)',
+                      fontWeight: 700,
                     }}>
                       {r ? (r.upper > r.lower ? 'U' : r.lower > r.upper ? 'L' : '½') : h.hole}
                     </div>

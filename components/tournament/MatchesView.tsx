@@ -67,7 +67,7 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
           const l2 = players.find(p => p.id === m.lower_p2)
 
           return (
-            <div key={m.id} style={{ background: 'var(--surface)', borderRadius: 12, padding: 16, border: '1px solid #333' }}>
+            <div key={m.id} style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(19,32,54,.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <div style={{ fontSize: 14, fontWeight: 'bold', color: 'var(--gold)', letterSpacing: 1 }}>{m.label}</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -95,7 +95,7 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
                         const current = m[slot]
                         return (
                           <select key={slot} value={current ?? ''} onChange={e => setSlot(m.id, slot, e.target.value)}
-                            style={{ width: '100%', marginBottom: 6, background: 'var(--bg-mid)', border: `1px solid ${current ? team?.color_hex : '#444'}`, borderRadius: 6, color: current ? 'var(--gold-lt)' : 'var(--muted)', padding: '8px 10px', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
+                            style={{ width: '100%', marginBottom: 6, background: 'var(--bg-mid)', border: `1px solid ${current ? team?.color_hex : 'var(--border)'}`, borderRadius: 6, color: current ? 'var(--gold-lt)' : 'var(--muted)', padding: '8px 10px', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
                             <option value="">— Select —</option>
                             {pool.map(p => {
                               const usedInOtherSlot = [...slots].some(s => s !== slot && m[s as keyof Match] === p.id)
@@ -131,7 +131,7 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           {err && <div style={{ color: '#f1948a', fontSize: 12, marginBottom: 8 }}>{err}</div>}
           <button onClick={save} disabled={saving} style={{ ...adminBtn, flex: 1 }}>{saving ? 'Saving…' : '✓ Save Pairings'}</button>
-          <button onClick={() => setDraft(null)} style={{ ...adminBtn, background: 'transparent', border: '1px solid #444', color: 'var(--muted)' }}>Cancel</button>
+          <button onClick={() => setDraft(null)} style={{ ...adminBtn, background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)' }}>Cancel</button>
         </div>
       )}
     </div>
@@ -140,6 +140,6 @@ export default function MatchesView({ onGoToScoring }: { onGoToScoring: (matchId
 
 const adminBtn: React.CSSProperties = {
   padding: '8px 16px', borderRadius: 8, border: '1px solid var(--gold)',
-  background: 'rgba(200,168,75,0.12)', color: 'var(--gold)', fontSize: 12,
+  background: 'rgba(47,109,240,0.08)', color: 'var(--gold)', fontSize: 12,
   cursor: 'pointer', fontWeight: 'bold', marginBottom: 14,
 }

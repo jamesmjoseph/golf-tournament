@@ -3,13 +3,16 @@
 @tailwind utilities;
 
 :root {
-  /* Fairway Fresh — vibrant fairway green replaces gold as the primary accent */
-  --bg:       #091a0d;            /* deep fairway dark               */
-  --bg-mid:   #0e2614;            /* mid-green surface               */
-  --gold:     #3ecf6b;            /* fresh fairway green (accent)    */
-  --gold-lt:  #e8fdf0;            /* near-white mint (primary text)  */
-  --muted:    #5c7d64;            /* green-tinted muted text         */
-  --surface:  rgba(62,207,107,0.05); /* subtle green card surface    */
+  /* Fairway Fresh — Claude Design */
+  --bg:       #eaf0f6;   /* page background */
+  --bg-mid:   #ffffff;   /* card / surface background */
+  --gold:     #2f6df0;   /* primary accent (blue) */
+  --gold-lt:  #132036;   /* primary text (dark navy) */
+  --muted:    #5e6b80;   /* secondary text */
+  --surface:  #f5f8fc;   /* input / nested surface */
+  --border:   #e1e8f1;   /* borders */
+  --mint:     #14c4a3;   /* secondary accent (teal) */
+  --navy:     #132036;   /* dark surfaces */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,13 +20,15 @@
 body {
   background: var(--bg);
   color: var(--gold-lt);
-  font-family: 'Georgia', serif;
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
   min-height: 100vh;
 }
 
-input, select, button, textarea { font-family: 'Georgia', serif; }
+input, select, button, textarea {
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', system-ui, sans-serif;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1e4d2a; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

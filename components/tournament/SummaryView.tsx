@@ -9,7 +9,6 @@ export default function SummaryView() {
 
   const winner = cup.upper > cup.lower ? upperTeam : cup.lower > cup.upper ? lowerTeam : null
 
-  // Scat: compute wins per player from scores
   const scatWins = players
     .map(p => ({
       player: p,
@@ -29,13 +28,18 @@ export default function SummaryView() {
   return (
     <div>
       {/* Champion */}
-      <div style={{ background: 'linear-gradient(135deg,#2d1a00,var(--bg-mid))', borderRadius: 16, padding: 28, textAlign: 'center', marginBottom: 24, border: '2px solid var(--gold)' }}>
+      <div style={{ background: 'var(--navy)', borderRadius: 20, padding: 28, textAlign: 'center', marginBottom: 24, boxShadow: '0 8px 28px rgba(19,32,54,.2)' }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>🏆</div>
-        <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 4, textTransform: 'uppercase' }}>Champion</div>
-        <div style={{ fontSize: 30, fontWeight: 'bold', marginTop: 8, color: winner ? winner.light_hex : 'var(--gold)' }}>
+        <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 4, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Champion</div>
+        <div style={{ fontSize: 30, fontWeight: 800, marginTop: 8, color: winner ? winner.light_hex : '#ffffff' }}>
           {winner ? winner.name : cup.total > 0 ? 'All Square — Tie' : 'In Progress'}
         </div>
-        <div style={{ fontSize: 16, color: '#aaa', marginTop: 6 }}>{cup.upper} – {cup.lower} pts</div>
+        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{cup.upper} – {cup.lower} pts</div>
+        {winner && (
+          <div style={{ marginTop: 14, display: 'inline-block', background: 'var(--mint)', borderRadius: 12, padding: '8px 20px' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>🎉 {winner.name} Wins!</span>
+          </div>
+        )}
       </div>
 
       {/* Match results */}
@@ -49,20 +53,20 @@ export default function SummaryView() {
           const l2 = players.find(p => p.id === m.lower_p2)
           const mWin = t.upper > t.lower ? 'upper' : t.lower > t.upper ? 'lower' : null
           return (
-            <div key={m.id} style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px', border: `1px solid ${mWin === 'upper' ? (upperTeam?.color_hex ?? '#2471a3') + '55' : mWin === 'lower' ? (lowerTeam?.color_hex ?? '#a93226') + '55' : '#333'}` }}>
+            <div key={m.id} style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: '12px 16px', border: `1px solid ${mWin === 'upper' ? (upperTeam?.color_hex ?? '#2f6df0') + '44' : mWin === 'lower' ? (lowerTeam?.color_hex ?? '#ff6b5e') + '44' : 'var(--border)'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--gold)', marginBottom: 4 }}>{m.label}</div>
-                  <div style={{ fontSize: 12, color: '#aaa' }}>
-                    <span style={{ color: mWin === 'upper' ? upperTeam?.light_hex : '#aaa' }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
+                  <div style={{ fontSize: 11, color: 'var(--gold)', marginBottom: 4, fontWeight: 700 }}>{m.label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    <span style={{ color: mWin === 'upper' ? upperTeam?.light_hex : 'var(--gold-lt)' }}>{u1?.name ?? '?'} & {u2?.name ?? '?'}</span>
                     <span style={{ color: 'var(--muted)', margin: '0 6px' }}>vs</span>
-                    <span style={{ color: mWin === 'lower' ? lowerTeam?.light_hex : '#aaa' }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
+                    <span style={{ color: mWin === 'lower' ? lowerTeam?.light_hex : 'var(--gold-lt)' }}>{l1?.name ?? '?'} & {l2?.name ?? '?'}</span>
                   </div>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-                  <span style={{ color: mWin === 'upper' ? upperTeam?.light_hex : '#aaa' }}>{t.upper}</span>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>
+                  <span style={{ color: mWin === 'upper' ? upperTeam?.light_hex : 'var(--muted)' }}>{t.upper}</span>
                   <span style={{ color: 'var(--muted)', margin: '0 6px' }}>–</span>
-                  <span style={{ color: mWin === 'lower' ? lowerTeam?.light_hex : '#aaa' }}>{t.lower}</span>
+                  <span style={{ color: mWin === 'lower' ? lowerTeam?.light_hex : 'var(--muted)' }}>{t.lower}</span>
                 </div>
               </div>
             </div>
@@ -70,7 +74,7 @@ export default function SummaryView() {
         })}
       </div>
 
-      {/* Scat — per player */}
+      {/* Scat */}
       {bonusConfig?.scat_enabled && scatWins.length > 0 && (
         <>
           <SectionHeader title="Scat Pool" subtitle="Individual lowest score per hole" />
@@ -81,17 +85,17 @@ export default function SummaryView() {
               return (
                 <div key={player.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px', background: (team?.color_hex ?? '#333') + '22',
-                  borderRadius: 10, border: `1px solid ${(team?.color_hex ?? '#444')}44`,
+                  padding: '10px 14px', background: 'var(--bg-mid)',
+                  borderRadius: 10, border: `1px solid ${(team?.color_hex ?? 'var(--border)')}33`,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? '#aaa' }} />
-                    <span style={{ fontSize: 14, fontWeight: 'bold', color: team?.light_hex ?? 'var(--gold-lt)' }}>{player.name}</span>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: team?.color_hex ?? 'var(--muted)' }} />
+                    <span style={{ fontSize: 14, fontWeight: 700, color: team?.light_hex ?? 'var(--gold-lt)' }}>{player.name}</span>
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{team?.name}</span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 12, color: '#aaa' }}>{wins} hole{wins !== 1 ? 's' : ''} · </span>
-                    <span style={{ fontSize: 18, fontWeight: 'bold', color: '#58d68d' }}>${earnings}</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>{wins} hole{wins !== 1 ? 's' : ''} · </span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--mint)' }}>${earnings}</span>
                   </div>
                 </div>
               )
@@ -104,13 +108,13 @@ export default function SummaryView() {
       {ctpList.length > 0 && (
         <>
           <SectionHeader title="Closest to the Pin" />
-          <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px', marginBottom: 20, border: '1px solid #58d68d33' }}>
+          <div style={{ background: 'var(--bg-mid)', borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: '1px solid rgba(20,196,163,0.25)' }}>
             {ctpList.map(({ hole, player }) => {
               const team = teams.find(t => t.id === player?.team_id)
               return (
-                <div key={hole} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #ffffff08' }}>
-                  <span style={{ color: '#aaa', fontSize: 13 }}>📍 Hole {hole}</span>
-                  <span style={{ fontWeight: 'bold', color: team?.light_hex, fontSize: 13 }}>{player?.name}</span>
+                <div key={hole} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--muted)', fontSize: 13 }}>📍 Hole {hole}</span>
+                  <span style={{ fontWeight: 700, color: team?.light_hex ?? 'var(--gold-lt)', fontSize: 13 }}>{player?.name}</span>
                 </div>
               )
             })}
