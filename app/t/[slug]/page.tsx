@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TournamentProvider from '@/components/tournament/TournamentContext'
 import TournamentApp from '@/components/tournament/TournamentApp'
-import type { Score } from '@/lib/types'
+import type { Score, CtpLog } from '@/lib/types'
 
 export default async function TournamentPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -25,6 +25,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
     { data: scores },
     { data: bonusConfig },
     { data: bonusResults },
+    { data: ctpLog },
   ] = await Promise.all([
     supabase.from('teams').select('*').eq('tournament_id', tournament.id).order('sort_order'),
     supabase.from('players').select('*').eq('tournament_id', tournament.id),
@@ -32,6 +33,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
     supabase.from('scores').select('*').eq('tournament_id', tournament.id),
     supabase.from('bonus_config').select('*').eq('tournament_id', tournament.id).single(),
     supabase.from('bonus_results').select('*').eq('tournament_id', tournament.id),
+    supabase.from('ctp_log').select('*').eq('tournament_id', tournament.id).order('recorded_at', { ascending: false }),
   ])
 
   // Fetch course + holes if linked
@@ -56,6 +58,7 @@ export default async function TournamentPage({ params }: { params: Promise<{ slu
       initialScores={(scores ?? []) as Score[]}
       initialBonusConfig={bonusConfig ?? null}
       initialBonusResults={bonusResults ?? []}
+      initialCtpLog={(ctpLog ?? []) as CtpLog[]}
     >
       <TournamentApp />
     </TournamentProvider>

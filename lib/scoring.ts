@@ -1,4 +1,4 @@
-import type { Hole, Match, Player, ScoreMap, HoleResult, MatchTotals, CupTotals, HcpMode } from './types'
+import type { Hole, Match, Player, BonusResult, ScoreMap, HoleResult, MatchTotals, CupTotals, HcpMode } from './types'
 
 // ── Handicap helpers ──────────────────────────────────────────────────────────
 
@@ -123,4 +123,19 @@ export function scatWinner(
   const min = Math.min(...entered.map(e => e.raw))
   const winners = entered.filter(e => e.raw === min)
   return winners.length === 1 ? winners[0].player : null
+}
+
+// Respects admin overrides: excluded holes pay nothing, override replaces auto winner.
+export function effectiveScatWinner(
+  holeNum: number,
+  players: Player[],
+  scores: ScoreMap,
+  bonusResults: BonusResult[],
+): Player | null {
+  const br = bonusResults.find(r => r.hole === holeNum)
+  if (br?.scat_excluded) return null
+  if (br?.scat_override_player_id) {
+    return players.find(p => p.id === br.scat_override_player_id) ?? null
+  }
+  return scatWinner(holeNum, players, scores)
 }

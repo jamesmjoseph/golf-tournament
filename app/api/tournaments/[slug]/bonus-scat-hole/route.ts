@@ -8,7 +8,7 @@ export async function PUT(
 ) {
   try {
     const { slug } = await params
-    const { adminToken, scat_enabled, scat_amount, scat_pool } = await request.json()
+    const { adminToken, hole, scat_excluded, scat_override_player_id } = await request.json()
 
     if (!(await validateAdminToken(slug, adminToken))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -18,16 +18,19 @@ export async function PUT(
     const { data: t } = await supabase.from('tournaments').select('id').eq('slug', slug).single()
     if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    const patch: Record<string, unknown> = {}
-    if (scat_enabled !== undefined) patch.scat_enabled = scat_enabled
-    if (scat_amount !== undefined) patch.scat_amount = scat_amount
-    if (scat_pool !== undefined) patch.scat_pool = scat_pool
+    const { error } = await supabase
+      .from('bonus_results')
+      .upsert(
+        {
+          tournament_id: t.id,
+          hole,
+          scat_excluded: scat_excluded ?? false,
+          scat_override_player_id: scat_override_player_id ?? null,
+        },
+        { onConflict: 'tournament_id,hole' },
+      )
 
-    await supabase
-      .from('bonus_config')
-      .update(patch)
-      .eq('tournament_id', t.id)
-
+    if (error) throw error
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error(err)

@@ -1,7 +1,7 @@
 'use client'
 import { useTournament } from './TournamentContext'
 import SectionHeader from '@/components/ui/SectionHeader'
-import { matchTotals, cupTotals, scatWinner } from '@/lib/scoring'
+import { matchTotals, cupTotals, effectiveScatWinner } from '@/lib/scoring'
 
 export default function SummaryView() {
   const { matches, players, holes, scores, teams, upperTeam, lowerTeam, bonusConfig, bonusResults, hcpMode } = useTournament()
@@ -12,10 +12,14 @@ export default function SummaryView() {
   const scatWins = players
     .map(p => ({
       player: p,
-      wins: holes.filter(h => scatWinner(h.hole, players, scores)?.id === p.id).length,
+      wins: holes.filter(h => effectiveScatWinner(h.hole, players, scores, bonusResults)?.id === p.id).length,
     }))
     .filter(x => x.wins > 0)
     .sort((a, b) => b.wins - a.wins)
+
+  const scatPool = bonusConfig?.scat_pool ?? 0
+  const winningHoles = holes.filter(h => effectiveScatWinner(h.hole, players, scores, bonusResults) !== null).length
+  const payoutPerHole = winningHoles > 0 ? scatPool / winningHoles : 0
 
   const ctpList = bonusResults
     .filter(r => r.ctp_winner_player_id)
@@ -81,7 +85,7 @@ export default function SummaryView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
             {scatWins.map(({ player, wins }) => {
               const team = teams.find(t => t.id === player.team_id)
-              const earnings = wins * bonusConfig.scat_amount
+              const earnings = scatPool > 0 ? wins * payoutPerHole : 0
               return (
                 <div key={player.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -94,8 +98,12 @@ export default function SummaryView() {
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{team?.name}</span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>{wins} hole{wins !== 1 ? 's' : ''} · </span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--mint)' }}>${earnings}</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>{wins} hole{wins !== 1 ? 's' : ''}</span>
+                    {scatPool > 0 && (
+                      <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--mint)', marginLeft: 6 }}>
+                        ${earnings % 1 === 0 ? earnings : earnings.toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 </div>
               )

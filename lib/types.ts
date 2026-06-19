@@ -69,6 +69,7 @@ export interface BonusConfig {
   tournament_id: string
   scat_enabled: boolean
   scat_amount: number
+  scat_pool: number
 }
 
 export interface BonusResult {
@@ -77,6 +78,20 @@ export interface BonusResult {
   hole: number
   scat_winner_team_id: string | null
   ctp_winner_player_id: string | null
+  scat_excluded: boolean
+  scat_override_player_id: string | null
+  ctp_distance_ft: number | null
+  ctp_distance_in: number | null
+}
+
+export interface CtpLog {
+  id: string
+  tournament_id: string
+  hole: number
+  player_id: string | null
+  distance_ft: number | null
+  distance_in: number | null
+  recorded_at: string
 }
 
 // playerId → hole → rawScore

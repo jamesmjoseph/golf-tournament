@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getSessionId, getAdminToken, storeAdminToken } from '@/lib/utils'
 import type {
   Tournament, Course, Hole, Team, Player, Match,
-  Score, BonusConfig, BonusResult, ScoreMap, HcpMode,
+  Score, BonusConfig, BonusResult, CtpLog, ScoreMap, HcpMode,
 } from '@/lib/types'
 
 interface TournamentContextValue {
@@ -17,6 +17,7 @@ interface TournamentContextValue {
   scores: ScoreMap
   bonusConfig: BonusConfig | null
   bonusResults: BonusResult[]
+  ctpLog: CtpLog[]
   isAdmin: boolean
   adminToken: string | null
   upperTeam: Team | null
@@ -25,6 +26,8 @@ interface TournamentContextValue {
   setHcpMode: (mode: HcpMode) => void
   updateScore: (playerId: string, hole: number, rawScore: number | null) => Promise<void>
   updateBonusResult: (hole: number, scatTeamId: string | null, ctpPlayerId: string | null) => Promise<void>
+  updateScatHole: (hole: number, excluded: boolean, overridePlayerId: string | null) => Promise<void>
+  updateCtp: (hole: number, playerId: string | null, distanceFt: number | null, distanceIn: number | null) => Promise<void>
   refetch: () => Promise<void>
   setCourse: (c: Course) => void
   setHoles: (h: Hole[]) => void
@@ -40,6 +43,7 @@ interface ProviderProps {
   initialScores: Score[]
   initialBonusConfig: BonusConfig | null
   initialBonusResults: BonusResult[]
+  initialCtpLog: CtpLog[]
   children: React.ReactNode
 }
 
@@ -70,6 +74,7 @@ export default function TournamentProvider({
   initialScores,
   initialBonusConfig,
   initialBonusResults,
+  initialCtpLog,
   children,
 }: ProviderProps) {
   const [course, setCourse]               = useState<Course | null>(initialCourse)
@@ -80,6 +85,7 @@ export default function TournamentProvider({
   const [scores, setScores]               = useState<ScoreMap>(scoresToMap(initialScores))
   const [bonusConfig, setBonusConfig]     = useState<BonusConfig | null>(initialBonusConfig)
   const [bonusResults, setBonusResults]   = useState<BonusResult[]>(initialBonusResults)
+  const [ctpLog, setCtpLog]               = useState<CtpLog[]>(initialCtpLog)
   const [adminToken, setAdminToken]       = useState<string | null>(null)
   const [hcpMode, setHcpMode]             = useState<HcpMode>(tournament.hcp_mode ?? 'low')
 
@@ -151,6 +157,23 @@ export default function TournamentProvider({
     return () => { supabase.removeChannel(channel) }
   }, [tournament.id])
 
+  // ── Real-time: ctp_log ────────────────────────────────────────────────────
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`ctp_log:${tournament.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'ctp_log', filter: `tournament_id=eq.${tournament.id}` },
+        payload => {
+          const entry = payload.new as CtpLog
+          setCtpLog(prev => [entry, ...prev])
+        },
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [tournament.id])
+
   // ── Score update — optimistic-first, then persist ────────────────────────
   const updateScore = useCallback(async (playerId: string, hole: number, rawScore: number | null) => {
     // Update local state immediately so the UI responds on click
@@ -190,11 +213,10 @@ export default function TournamentProvider({
     scatTeamId: string | null,
     ctpPlayerId: string | null,
   ) => {
-    // Optimistic update
     setBonusResults(prev => {
       const next = [...prev]
       const idx = next.findIndex(r => r.hole === hole)
-      const updated: BonusResult = { id: '', tournament_id: tournament.id, hole, scat_winner_team_id: scatTeamId, ctp_winner_player_id: ctpPlayerId }
+      const updated: BonusResult = { id: '', tournament_id: tournament.id, hole, scat_winner_team_id: scatTeamId, ctp_winner_player_id: ctpPlayerId, scat_excluded: false, scat_override_player_id: null, ctp_distance_ft: null, ctp_distance_in: null }
       if (idx >= 0) { next[idx] = { ...next[idx], ...updated } } else { next.push(updated) }
       return next
     })
@@ -208,6 +230,57 @@ export default function TournamentProvider({
     })
     if (error) console.error('Bonus save failed:', error)
   }, [tournament.id])
+
+  // ── Scat per-hole admin override — optimistic-first ──────────────────────
+  const updateScatHole = useCallback(async (
+    hole: number,
+    excluded: boolean,
+    overridePlayerId: string | null,
+  ) => {
+    setBonusResults(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(r => r.hole === hole)
+      const base: BonusResult = { id: '', tournament_id: tournament.id, hole, scat_winner_team_id: null, ctp_winner_player_id: null, scat_excluded: excluded, scat_override_player_id: overridePlayerId, ctp_distance_ft: null, ctp_distance_in: null }
+      if (idx >= 0) { next[idx] = { ...next[idx], scat_excluded: excluded, scat_override_player_id: overridePlayerId } } else { next.push(base) }
+      return next
+    })
+
+    const token = getAdminToken(tournament.slug)
+    const res = await fetch(`/api/tournaments/${tournament.slug}/bonus-scat-hole`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminToken: token, hole, scat_excluded: excluded, scat_override_player_id: overridePlayerId }),
+    })
+    if (!res.ok) console.error('Scat hole save failed:', await res.text())
+  }, [tournament.id, tournament.slug])
+
+  // ── CTP update — optimistic bonus_results, log handled server-side ───────
+  const updateCtp = useCallback(async (
+    hole: number,
+    playerId: string | null,
+    distanceFt: number | null,
+    distanceIn: number | null,
+  ) => {
+    setBonusResults(prev => {
+      const next = [...prev]
+      const idx = next.findIndex(r => r.hole === hole)
+      const patch = { ctp_winner_player_id: playerId, ctp_distance_ft: distanceFt, ctp_distance_in: distanceIn }
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], ...patch }
+      } else {
+        next.push({ id: '', tournament_id: tournament.id, hole, scat_winner_team_id: null, scat_excluded: false, scat_override_player_id: null, ...patch })
+      }
+      return next
+    })
+
+    const token = getAdminToken(tournament.slug)
+    const res = await fetch(`/api/tournaments/${tournament.slug}/bonus-ctp`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adminToken: token, hole, player_id: playerId, distance_ft: distanceFt, distance_in: distanceIn }),
+    })
+    if (!res.ok) console.error('CTP save failed:', await res.text())
+  }, [tournament.id, tournament.slug])
 
   // ── Refetch all mutable data ──────────────────────────────────────────────
   const refetch = useCallback(async () => {
@@ -249,7 +322,7 @@ export default function TournamentProvider({
   return (
     <Ctx.Provider value={{
       tournament, course, holes, teams, players, matches,
-      scores, bonusConfig, bonusResults,
+      scores, bonusConfig, bonusResults, ctpLog,
       isAdmin: Boolean(adminToken),
       adminToken,
       upperTeam,
@@ -258,6 +331,8 @@ export default function TournamentProvider({
       setHcpMode,
       updateScore,
       updateBonusResult,
+      updateScatHole,
+      updateCtp,
       refetch,
       setCourse,
       setHoles,
